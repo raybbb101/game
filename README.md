@@ -1,3 +1,8 @@
+# Games
+
+- **Wildkin** (`wildkin/`) — real-world GPS + AR monster adventure. See [wildkin/README.md](wildkin/README.md).
+- **Tide Keeper** (root) — 3D light-bending puzzle game, below.
+
 # Tide Keeper
 
 A calm 3D mobile puzzle game. You are **Lumi**, the last spark of a lighthouse scattered by a storm.

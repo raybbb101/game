@@ -1,0 +1,587 @@
+// All static game content: elements, personalities, species, items, photo requests, fairy tasks.
+// Pure data — no DOM — so the node test tool can import it too.
+
+export const ELEMENTS = {
+  flame: { name: 'Flame', color: '#ff7a45', icon: '🔥' },
+  tide: { name: 'Tide', color: '#3fa7ff', icon: '💧' },
+  leaf: { name: 'Leaf', color: '#4cc96b', icon: '🌿' },
+  spark: { name: 'Spark', color: '#ffd23f', icon: '⚡' },
+  stone: { name: 'Stone', color: '#a68a6d', icon: '🪨' },
+  wind: { name: 'Wind', color: '#8fe3e0', icon: '🌀' },
+  dream: { name: 'Dream', color: '#b48cff', icon: '🌙' },
+};
+
+// attacker element -> elements it is strong against
+export const STRONG_AGAINST = {
+  flame: ['leaf', 'wind'],
+  tide: ['flame', 'stone'],
+  leaf: ['tide', 'stone'],
+  spark: ['tide', 'wind'],
+  stone: ['spark', 'flame'],
+  wind: ['leaf', 'spark'],
+  dream: ['dream'],
+};
+
+// How a monster reacts to people. `luck` = base chance it simply walks up and joins you.
+export const PERSONALITIES = {
+  friendly: {
+    label: 'Friendly', emoji: '😊', luck: 0.16,
+    desc: 'Loves humans. A nice chat is all it takes.',
+  },
+  curious: {
+    label: 'Curious', emoji: '🤩', luck: 0.08,
+    desc: 'Wants to see something from your world. Snap it a photo!',
+  },
+  playful: {
+    label: 'Playful', emoji: '😜', luck: 0.1,
+    desc: 'Loves games. Win its little game and it will tag along.',
+  },
+  shy: {
+    label: 'Shy', emoji: '🥺', luck: 0.05,
+    desc: 'Nervous around people. A treat helps it open up.',
+  },
+  proud: {
+    label: 'Proud', emoji: '😤', luck: 0.03,
+    desc: 'Only respects strong humans. Show your strength.',
+  },
+  fierce: {
+    label: 'Fierce', emoji: '😠', luck: 0.0,
+    desc: 'Does not like humans. You will have to beat it.',
+  },
+};
+
+export const RARITY = {
+  common: { label: 'Common', weight: 60, xp: 20, color: '#9fb4c7' },
+  uncommon: { label: 'Uncommon', weight: 28, xp: 35, color: '#5fd38d' },
+  rare: { label: 'Rare', weight: 10, xp: 70, color: '#58a6ff' },
+  legendary: { label: 'Legendary', weight: 2, xp: 150, color: '#ffb02e' },
+};
+
+// Species. `look` drives the procedural 3D model (model3d.js) and the 2D fallback art (art.js):
+//   shape: round | pear | lump | long | tall | blob | star
+//   top:   sprout cat bunny fins bolts tuft antennae mushroom spikes horns crest crown flame dog rays
+//          coral flower cap antlers tree gems tufts nightcap moon halo none
+//   eyes:  big | sparkle | sleepy | fierce | single | dot
+//   extra: list of flametail wings mothwings fintail startail bubbles spots stripes shell tail sparkles
+//          cracks cloud ghost arms spikesback leaves
+//   size:  real-world height in meters (used in AR)
+// likes: tags used for chat answers and photo requests
+const sp = (id, name, element, rarity, [hp, atk, def, spd], personalities, likes, blurb, look, moves) => ({
+  id, name, element, rarity, base: { hp, atk, def, spd }, personalities, likes, blurb,
+  look: { extra: [], size: 0.5, ...look, extra: [].concat(look.extra || []) }, moves,
+});
+
+export const SPECIES = [
+  // ---------- Leaf ----------
+  sp('sprigling', 'Sprigling', 'leaf', 'common', [44, 10, 11, 9], { friendly: 4, curious: 3, shy: 2 },
+    ['green', 'greenery', 'sky', 'flower', 'fruit', 'sunny', 'calm'],
+    'A sprout that naps in sunbeams. It grows a new leaf every time it makes a friend.',
+    { shape: 'round', main: '#7bd88f', accent: '#3f9e5a', belly: '#d9f7c8', top: 'sprout', eyes: 'big', size: 0.45 },
+    ['tackle', 'vine_whip', 'guard']),
+  sp('honeybop', 'Honeybop', 'leaf', 'common', [42, 11, 10, 11], { friendly: 4, curious: 4 },
+    ['yellow', 'flower', 'food', 'sweet', 'sunny', 'cute'],
+    'A fuzzy little forager. Will follow anyone who smells like cake.',
+    { shape: 'round', main: '#ffcb47', accent: '#5a3d1e', belly: '#fff0b3', top: 'antennae', eyes: 'big', extra: ['stripes', 'wings'], size: 0.4 },
+    ['tackle', 'pollen_puff', 'guard']),
+  sp('petalpuff', 'Petalpuff', 'leaf', 'common', [42, 10, 11, 10], { friendly: 5, curious: 2 },
+    ['pink', 'flower', 'cute', 'sunny', 'sweet'],
+    'Its head-flower blooms wider the happier it gets. Bees adore it.',
+    { shape: 'round', main: '#ffd1e3', accent: '#e86a9a', belly: '#fff4f8', top: 'flower', eyes: 'sparkle', size: 0.42 },
+    ['tackle', 'petal_storm_s', 'guard']),
+  sp('acornut', 'Acornut', 'leaf', 'common', [46, 11, 13, 8], { shy: 4, playful: 3 },
+    ['brown', 'greenery', 'food', 'calm', 'games'],
+    'Buries snacks everywhere and forgets where. Half the trees in town are its fault.',
+    { shape: 'pear', main: '#c98b55', accent: '#6e4426', belly: '#f3dcc0', top: 'cap', eyes: 'big', extra: ['tail'], size: 0.4 },
+    ['tackle', 'seed_shot', 'guard']),
+  sp('mossling', 'Mossling', 'leaf', 'uncommon', [50, 12, 13, 7], { shy: 4, curious: 3 },
+    ['green', 'greenery', 'calm', 'night', 'flower', 'rain'],
+    'Wears a mushroom cap as a hat. Glows faintly on rainy nights.',
+    { shape: 'pear', main: '#9fd6a0', accent: '#d9534f', belly: '#eef9e8', top: 'mushroom', eyes: 'sleepy', extra: ['spots'], size: 0.5 },
+    ['tackle', 'spore_cloud', 'guard']),
+  sp('thornback', 'Thornback', 'leaf', 'uncommon', [52, 14, 15, 7], { proud: 4, fierce: 3 },
+    ['green', 'strong', 'brave', 'greenery'],
+    'Curls into a spiky ball when annoyed, which is often.',
+    { shape: 'lump', main: '#5fae5a', accent: '#2f5e2c', belly: '#cfe9b8', top: 'spikes', eyes: 'fierce', extra: ['spikesback'], size: 0.55 },
+    ['bite', 'vine_whip', 'roar']),
+  sp('bloomhorn', 'Bloomhorn', 'leaf', 'rare', [56, 15, 13, 14], { friendly: 3, proud: 3, curious: 2 },
+    ['flower', 'greenery', 'calm', 'sunny', 'adventure'],
+    'A gentle forest guardian. Flowers sprout wherever it steps.',
+    { shape: 'tall', main: '#f2e6cf', accent: '#8a6a45', belly: '#fffaf0', top: 'antlers', eyes: 'big', extra: ['leaves', 'tail'], size: 0.95 },
+    ['tackle', 'petal_storm', 'guard']),
+  sp('elderoak', 'Elderoak', 'leaf', 'legendary', [72, 17, 20, 7], { proud: 4, friendly: 2 },
+    ['greenery', 'calm', 'strong', 'rain', 'green'],
+    'An ancient walking tree. Birds have nested in its crown for three hundred years.',
+    { shape: 'lump', main: '#8b6a4a', accent: '#4c3826', belly: '#b89571', top: 'tree', eyes: 'sleepy', extra: ['arms'], size: 1.5 },
+    ['bite', 'petal_storm', 'roar']),
+
+  // ---------- Flame ----------
+  sp('emberkit', 'Emberkit', 'flame', 'common', [40, 13, 9, 12], { playful: 4, proud: 2, friendly: 2 },
+    ['red', 'orange', 'sunset', 'warm', 'food', 'games', 'brave'],
+    'A kitten made of campfire. Its tail flickers brighter when it is excited.',
+    { shape: 'round', main: '#ff9a5a', accent: '#e8552d', belly: '#ffe0b8', top: 'cat', eyes: 'big', extra: ['flametail'], size: 0.42 },
+    ['scratch', 'ember', 'guard']),
+  sp('wickit', 'Wickit', 'flame', 'common', [38, 12, 9, 11], { shy: 3, friendly: 4 },
+    ['night', 'lights', 'warm', 'calm', 'orange'],
+    'A living candle. It worries about rain more than anything.',
+    { shape: 'tall', main: '#fff1d6', accent: '#e0a96d', belly: '#ffffff', top: 'flame', eyes: 'dot', size: 0.38 },
+    ['tackle', 'ember', 'guard']),
+  sp('pyropup', 'Pyropup', 'flame', 'common', [44, 13, 10, 12], { playful: 4, friendly: 4 },
+    ['games', 'food', 'warm', 'adventure', 'red'],
+    'Wags its fiery tail so hard it sometimes toasts marshmallows by accident.',
+    { shape: 'round', main: '#ffb27a', accent: '#c4542b', belly: '#fff0dc', top: 'dog', eyes: 'big', extra: ['flametail'], size: 0.48 },
+    ['bite', 'flare_dash', 'guard']),
+  sp('magmole', 'Magmole', 'flame', 'uncommon', [54, 13, 16, 6], { shy: 3, proud: 3 },
+    ['warm', 'calm', 'sleep', 'red', 'strong'],
+    'Tunnels under hot springs. Its cracked skin glows like embers.',
+    { shape: 'lump', main: '#4a3a3a', accent: '#ff6a2b', belly: '#7a5a52', top: 'none', eyes: 'sleepy', extra: ['cracks', 'arms'], size: 0.55 },
+    ['tackle', 'flare_dash', 'guard']),
+  sp('cindermaw', 'Cindermaw', 'flame', 'rare', [54, 17, 12, 11], { fierce: 5, proud: 3 },
+    ['red', 'brave', 'strong', 'warm', 'food'],
+    'Guards its territory with a roar like a furnace. Only bows to the strong.',
+    { shape: 'lump', main: '#d9453b', accent: '#5b1a1a', belly: '#ffb27a', top: 'horns', eyes: 'fierce', extra: ['flametail', 'spikesback'], size: 0.85 },
+    ['bite', 'inferno', 'roar']),
+  sp('blazewing', 'Blazewing', 'flame', 'rare', [50, 16, 11, 17], { proud: 4, fierce: 2, curious: 2 },
+    ['sky', 'fast', 'sunset', 'brave', 'orange'],
+    'Streaks across the evening sky leaving a trail of sparks.',
+    { shape: 'pear', main: '#ff7a3d', accent: '#b8321c', belly: '#ffd58a', top: 'crest', eyes: 'fierce', extra: ['wings', 'flametail'], size: 0.8 },
+    ['peck', 'inferno', 'roar']),
+  sp('solaris', 'Solaris', 'flame', 'legendary', [66, 20, 15, 16], { proud: 5, friendly: 1 },
+    ['sunny', 'sky', 'warm', 'brave', 'yellow'],
+    'A fragment of the morning sun. Wherever it naps, the day stays warm.',
+    { shape: 'round', main: '#ffcf4a', accent: '#ff8a1f', belly: '#fff3c4', top: 'rays', eyes: 'sparkle', extra: ['sparkles'], size: 1.1 },
+    ['tackle', 'solar_flare', 'roar']),
+
+  // ---------- Tide ----------
+  sp('bubbloo', 'Bubbloo', 'tide', 'common', [48, 10, 10, 9], { friendly: 5, curious: 3 },
+    ['blue', 'water', 'sky', 'calm', 'food', 'cute'],
+    'Blows bubbles when happy, which is almost always.',
+    { shape: 'round', main: '#6cc4ff', accent: '#2f7fd6', belly: '#d8f1ff', top: 'fins', eyes: 'big', extra: ['bubbles'], size: 0.45 },
+    ['tackle', 'splash', 'guard']),
+  sp('puddlepip', 'Puddlepip', 'tide', 'common', [44, 10, 10, 11], { playful: 4, friendly: 3 },
+    ['water', 'rain', 'games', 'blue', 'cute'],
+    'A wobbly droplet that jumps into every puddle it sees.',
+    { shape: 'blob', main: '#7fd3ff', accent: '#3a8fd1', belly: '#e1f6ff', top: 'none', eyes: 'sparkle', extra: ['bubbles'], size: 0.35 },
+    ['tackle', 'bubble_beam', 'guard']),
+  sp('shellby', 'Shellby', 'tide', 'common', [50, 9, 15, 7], { shy: 4, friendly: 3 },
+    ['water', 'calm', 'sleep', 'blue', 'food'],
+    'Hides in its shell for hours. Comes out for snacks and nice music.',
+    { shape: 'round', main: '#9fe0c9', accent: '#d08a4e', belly: '#e9fff7', top: 'none', eyes: 'big', extra: ['shell'], size: 0.4 },
+    ['tackle', 'bubble_beam', 'guard']),
+  sp('ripplefin', 'Ripplefin', 'tide', 'uncommon', [46, 13, 11, 12], { curious: 4, shy: 2, playful: 2 },
+    ['blue', 'water', 'calm', 'sky', 'adventure', 'food'],
+    'Swims through puddles as if they were oceans. Very good at hide and seek.',
+    { shape: 'long', main: '#4fb3d9', accent: '#1d6f9c', belly: '#c9efff', top: 'fins', eyes: 'big', extra: ['fintail'], size: 0.5 },
+    ['tackle', 'tidal_spin', 'guard']),
+  sp('frostnib', 'Frostnib', 'tide', 'uncommon', [46, 12, 13, 10], { shy: 3, proud: 3 },
+    ['white', 'blue', 'calm', 'night', 'sweet'],
+    'Leaves frost flowers on windows. Melts a little when complimented.',
+    { shape: 'round', main: '#eaf6ff', accent: '#7cb7e8', belly: '#ffffff', top: 'spikes', eyes: 'big', extra: ['sparkles'], size: 0.45 },
+    ['tackle', 'frost_breath', 'guard']),
+  sp('coralyn', 'Coralyn', 'tide', 'uncommon', [48, 12, 12, 11], { curious: 4, friendly: 3 },
+    ['pink', 'water', 'cute', 'flower', 'calm'],
+    'Grows tiny coral gardens on its head and lets little fish live there.',
+    { shape: 'pear', main: '#ffb3b3', accent: '#ff6f91', belly: '#fff0f0', top: 'coral', eyes: 'big', extra: ['fintail'], size: 0.5 },
+    ['tackle', 'bubble_beam', 'guard']),
+  sp('tidalisk', 'Tidalisk', 'tide', 'rare', [56, 16, 13, 14], { fierce: 4, proud: 3 },
+    ['water', 'strong', 'brave', 'blue'],
+    'A river serpent that rules the canals. Boats slow down when they pass it.',
+    { shape: 'long', main: '#2f6fa8', accent: '#173d63', belly: '#a9d8ff', top: 'crest', eyes: 'fierce', extra: ['fintail', 'spikesback'], size: 0.9 },
+    ['bite', 'tsunami', 'roar']),
+  sp('leviadawn', 'Leviadawn', 'tide', 'legendary', [70, 19, 17, 15], { proud: 4, curious: 2 },
+    ['water', 'sky', 'calm', 'sunset', 'strong'],
+    'Rises from the sea only at dawn. Its song can be heard for miles.',
+    { shape: 'long', main: '#5ad1e6', accent: '#ffd76a', belly: '#e6fbff', top: 'crown', eyes: 'sparkle', extra: ['fintail', 'sparkles'], size: 1.4 },
+    ['bite', 'tsunami', 'roar']),
+
+  // ---------- Spark ----------
+  sp('zapple', 'Zapple', 'spark', 'common', [38, 12, 8, 14], { playful: 4, curious: 3, friendly: 1 },
+    ['yellow', 'night', 'lights', 'games', 'fast', 'fruit'],
+    'An apple-sized bundle of static. Do not pet it with wool gloves.',
+    { shape: 'round', main: '#ffe066', accent: '#f0a500', belly: '#fff6c9', top: 'bolts', eyes: 'sparkle', size: 0.35 },
+    ['tackle', 'zap', 'guard']),
+  sp('fuzzlet', 'Fuzzlet', 'spark', 'common', [40, 11, 10, 13], { friendly: 4, playful: 3 },
+    ['cute', 'games', 'yellow', 'sweet', 'lights'],
+    'So fluffy with static that it sticks to socks. Purrs with a buzz.',
+    { shape: 'blob', main: '#fff3a0', accent: '#e6b800', belly: '#ffffff', top: 'tuft', eyes: 'big', extra: ['sparkles'], size: 0.32 },
+    ['tackle', 'static_shock', 'guard']),
+  sp('boltbug', 'Boltbug', 'spark', 'common', [38, 12, 11, 14], { curious: 4, playful: 3 },
+    ['lights', 'night', 'fast', 'yellow', 'adventure'],
+    'Gathers around streetlights at night and hums along with them.',
+    { shape: 'round', main: '#4a5bd9', accent: '#ffd23f', belly: '#ffe98a', top: 'antennae', eyes: 'big', extra: ['wings', 'spots'], size: 0.32 },
+    ['tackle', 'static_shock', 'guard']),
+  sp('voltabun', 'Voltabun', 'spark', 'uncommon', [44, 14, 9, 15], { playful: 5, friendly: 2 },
+    ['yellow', 'pink', 'games', 'fast', 'sweet', 'lights'],
+    'Hops so fast it leaves little lightning footprints.',
+    { shape: 'round', main: '#fff1a8', accent: '#ffb000', belly: '#ffffff', top: 'bunny', eyes: 'sparkle', extra: ['tail'], size: 0.45 },
+    ['scratch', 'thunder_hop', 'guard']),
+  sp('ampereel', 'Ampereel', 'spark', 'uncommon', [46, 14, 10, 14], { curious: 3, fierce: 3 },
+    ['water', 'night', 'lights', 'fast'],
+    'An eel that lights up the river at night. Its spots blink in patterns.',
+    { shape: 'long', main: '#2e3a6b', accent: '#ffe14a', belly: '#6f7fc4', top: 'bolts', eyes: 'dot', extra: ['spots', 'fintail'], size: 0.55 },
+    ['bite', 'zap', 'guard']),
+  sp('thundrake', 'Thundrake', 'spark', 'rare', [56, 17, 13, 15], { fierce: 4, proud: 4 },
+    ['strong', 'brave', 'sky', 'fast', 'night'],
+    'A storm dragon. It sleeps through sunny days and wakes up with the thunder.',
+    { shape: 'tall', main: '#ffd23f', accent: '#3b3b5c', belly: '#fff3b8', top: 'horns', eyes: 'fierce', extra: ['wings', 'tail', 'arms', 'spikesback'], size: 1.0 },
+    ['bite', 'volt_crash', 'roar']),
+
+  // ---------- Stone ----------
+  sp('pebblet', 'Pebblet', 'stone', 'common', [52, 10, 14, 5], { shy: 4, friendly: 3 },
+    ['grey', 'calm', 'greenery', 'sleep', 'cute'],
+    'Pretends to be an ordinary rock when strangers walk by. It is not very good at it.',
+    { shape: 'lump', main: '#b8aea2', accent: '#7d7368', belly: '#e5dfd7', top: 'none', eyes: 'sleepy', extra: ['spots'], size: 0.35 },
+    ['tackle', 'pebble_toss', 'guard']),
+  sp('mudbun', 'Mudbun', 'stone', 'common', [48, 11, 12, 10], { playful: 5, friendly: 2 },
+    ['games', 'rain', 'brown', 'food', 'cute'],
+    'Rolls in mud puddles to cool off. Somehow always looks pleased with itself.',
+    { shape: 'blob', main: '#a67852', accent: '#6b4a2f', belly: '#d9b896', top: 'bunny', eyes: 'big', size: 0.4 },
+    ['tackle', 'pebble_toss', 'guard']),
+  sp('rockhop', 'Rockhop', 'stone', 'common', [50, 12, 14, 8], { friendly: 4, playful: 2, proud: 2 },
+    ['strong', 'adventure', 'grey', 'games'],
+    'Jumps from boulder to boulder and never misses. Its feet are tougher than the rocks.',
+    { shape: 'round', main: '#9ea3ab', accent: '#5d6068', belly: '#d7dbe0', top: 'tuft', eyes: 'big', extra: ['arms'], size: 0.45 },
+    ['tackle', 'pebble_toss', 'guard']),
+  sp('crystalis', 'Crystalis', 'stone', 'uncommon', [46, 13, 15, 10], { shy: 4, curious: 3 },
+    ['purple', 'lights', 'night', 'calm', 'cute'],
+    'Grows gemstones on its head. Shines like a disco ball in the sun.',
+    { shape: 'round', main: '#c9b6ff', accent: '#7b5cff', belly: '#f1ebff', top: 'gems', eyes: 'sparkle', extra: ['sparkles'], size: 0.45 },
+    ['tackle', 'gem_shard', 'guard']),
+  sp('golemoss', 'Golemoss', 'stone', 'uncommon', [58, 13, 17, 5], { proud: 3, shy: 3 },
+    ['greenery', 'calm', 'strong', 'sleep', 'rain'],
+    'A slow stone giant covered in moss. Snails like to live on its shoulders.',
+    { shape: 'tall', main: '#8f948d', accent: '#4f8f4a', belly: '#bfc4bb', top: 'sprout', eyes: 'dot', extra: ['arms', 'spots'], size: 0.8 },
+    ['tackle', 'rockslide', 'guard']),
+  sp('granitusk', 'Granitusk', 'stone', 'rare', [62, 15, 18, 6], { proud: 5, fierce: 3 },
+    ['grey', 'strong', 'brave', 'calm', 'greenery'],
+    'An old mountain spirit. It tests every traveller who crosses its path.',
+    { shape: 'lump', main: '#8e8a86', accent: '#4d4945', belly: '#c9c3bb', top: 'horns', eyes: 'fierce', extra: ['spots', 'arms'], size: 1.0 },
+    ['bite', 'rockslide', 'roar']),
+  sp('fossilux', 'Fossilux', 'stone', 'rare', [58, 17, 16, 9], { fierce: 5, proud: 2 },
+    ['strong', 'brave', 'night', 'grey'],
+    'Woke up after a million-year nap and is extremely grumpy about it.',
+    { shape: 'long', main: '#e2d6bf', accent: '#7a6a52', belly: '#f5ecdc', top: 'spikes', eyes: 'fierce', extra: ['spikesback', 'tail', 'stripes'], size: 0.9 },
+    ['bite', 'rockslide', 'roar']),
+
+  // ---------- Wind ----------
+  sp('breezel', 'Breezel', 'wind', 'common', [40, 11, 9, 15], { curious: 4, playful: 3 },
+    ['sky', 'white', 'blue', 'fast', 'adventure', 'flower'],
+    'Rides gusts between rooftops and collects lost kites.',
+    { shape: 'pear', main: '#e9fbff', accent: '#7fd6dd', belly: '#ffffff', top: 'tuft', eyes: 'big', extra: ['wings'], size: 0.42 },
+    ['peck', 'gust', 'guard']),
+  sp('nimbuff', 'Nimbuff', 'wind', 'common', [44, 9, 11, 12], { friendly: 4, shy: 3 },
+    ['sky', 'white', 'sleep', 'calm', 'rain'],
+    'A little cloud that fell asleep and drifted too low. Very soft.',
+    { shape: 'blob', main: '#ffffff', accent: '#a9c7e8', belly: '#f2f8ff', top: 'none', eyes: 'sleepy', extra: ['cloud'], size: 0.4 },
+    ['tackle', 'gust', 'guard']),
+  sp('kitewing', 'Kitewing', 'wind', 'common', [40, 12, 9, 16], { playful: 4, curious: 3 },
+    ['sky', 'fast', 'games', 'adventure', 'red'],
+    'Shaped like a kite and twice as hard to catch on a windy day.',
+    { shape: 'star', main: '#ff8f8f', accent: '#4a6fd9', belly: '#ffe0e0', top: 'none', eyes: 'big', extra: ['tail'], size: 0.4 },
+    ['peck', 'feather_dance', 'guard']),
+  sp('hootle', 'Hootle', 'wind', 'uncommon', [46, 13, 11, 13], { curious: 4, shy: 3 },
+    ['night', 'calm', 'sky', 'adventure', 'brown'],
+    'Stays up all night reading the stars. Asks a lot of questions.',
+    { shape: 'round', main: '#b38b6d', accent: '#6b4d36', belly: '#f2e2cc', top: 'tufts', eyes: 'sparkle', extra: ['wings'], size: 0.48 },
+    ['peck', 'feather_dance', 'guard']),
+  sp('twirlwind', 'Twirlwind', 'wind', 'uncommon', [44, 13, 10, 16], { playful: 5, curious: 2 },
+    ['games', 'fast', 'sky', 'blue'],
+    'Spins like a top when it laughs. It laughs a lot.',
+    { shape: 'blob', main: '#9ff0e6', accent: '#2fb5a6', belly: '#e6fffb', top: 'tuft', eyes: 'sparkle', extra: ['cloud'], size: 0.45 },
+    ['tackle', 'cyclone_s', 'guard']),
+  sp('galecrest', 'Galecrest', 'wind', 'rare', [50, 15, 11, 18], { proud: 4, curious: 2, fierce: 2 },
+    ['sky', 'blue', 'fast', 'adventure', 'brave'],
+    'Rules the rooftops. Its crest feathers point toward the next storm.',
+    { shape: 'pear', main: '#7fd0e6', accent: '#2c6e8f', belly: '#e6fbff', top: 'crest', eyes: 'fierce', extra: ['wings', 'tail'], size: 0.85 },
+    ['peck', 'cyclone', 'roar']),
+  sp('tempestra', 'Tempestra', 'wind', 'legendary', [64, 19, 14, 20], { proud: 4, fierce: 3 },
+    ['sky', 'fast', 'brave', 'strong', 'rain'],
+    'Where it flies, the sky changes. Sailors once prayed it would pass them by.',
+    { shape: 'pear', main: '#3d4f7a', accent: '#9fe7ff', belly: '#c9d6f2', top: 'crown', eyes: 'fierce', extra: ['wings', 'tail', 'sparkles'], size: 1.3 },
+    ['peck', 'cyclone', 'roar']),
+
+  // ---------- Dream ----------
+  sp('twinklit', 'Twinklit', 'dream', 'common', [40, 11, 10, 13], { friendly: 5, curious: 2 },
+    ['night', 'lights', 'cute', 'sky', 'yellow'],
+    'A fallen star small enough to fit in your hand. Grants very tiny wishes.',
+    { shape: 'star', main: '#ffe58a', accent: '#f0b400', belly: '#fff8d6', top: 'none', eyes: 'sparkle', extra: ['sparkles'], size: 0.32 },
+    ['tackle', 'moonbeam', 'guard']),
+  sp('snoozle', 'Snoozle', 'dream', 'common', [48, 9, 12, 8], { shy: 4, friendly: 3 },
+    ['sleep', 'night', 'calm', 'purple', 'sweet'],
+    'Always sleepy. If it yawns near you, you will yawn too.',
+    { shape: 'blob', main: '#b9a3ff', accent: '#6a4fd6', belly: '#efe9ff', top: 'nightcap', eyes: 'sleepy', size: 0.4 },
+    ['tackle', 'dream_dust', 'guard']),
+  sp('lumimoth', 'Lumimoth', 'dream', 'rare', [48, 14, 12, 14], { friendly: 3, curious: 4, shy: 2 },
+    ['night', 'lights', 'purple', 'flower', 'calm', 'sweet'],
+    'Drawn to porch lights and kind hearts. Its wings show dreams you have forgotten.',
+    { shape: 'pear', main: '#d7c2ff', accent: '#7a52d1', belly: '#f6efff', top: 'antennae', eyes: 'sparkle', extra: ['mothwings'], size: 0.55 },
+    ['tackle', 'dream_dust', 'guard']),
+  sp('glimmerwisp', 'Glimmerwisp', 'dream', 'uncommon', [42, 13, 9, 15], { curious: 4, playful: 4 },
+    ['night', 'lights', 'games', 'purple'],
+    'A shy little ghost light. It only giggles, never says boo.',
+    { shape: 'blob', main: '#c7f0ff', accent: '#7a9cff', belly: '#ffffff', top: 'none', eyes: 'dot', extra: ['ghost', 'sparkles'], size: 0.42 },
+    ['tackle', 'moonbeam', 'guard']),
+  sp('phantomew', 'Phantomew', 'dream', 'rare', [48, 16, 11, 16], { fierce: 3, playful: 4 },
+    ['night', 'games', 'purple', 'fast'],
+    'A shadow cat with one big eye. Plays pranks, then pretends it was you.',
+    { shape: 'round', main: '#3b2f5c', accent: '#b48cff', belly: '#5d4a8a', top: 'cat', eyes: 'single', extra: ['tail', 'sparkles'], size: 0.5 },
+    ['scratch', 'nightmare', 'roar']),
+  sp('lunaria', 'Lunaria', 'dream', 'rare', [54, 15, 14, 14], { proud: 3, curious: 3, friendly: 2 },
+    ['night', 'sky', 'calm', 'white', 'lights'],
+    'Wears the crescent moon on its brow. It walks only by moonlight.',
+    { shape: 'tall', main: '#e9e6ff', accent: '#8f86e0', belly: '#ffffff', top: 'moon', eyes: 'sparkle', extra: ['tail', 'sparkles'], size: 0.9 },
+    ['tackle', 'nightmare', 'guard']),
+  sp('nyxtail', 'Nyxtail', 'dream', 'legendary', [66, 19, 16, 16], { proud: 4, fierce: 2, curious: 2 },
+    ['night', 'purple', 'lights', 'brave', 'strong', 'sky'],
+    'Said to sweep the stars across the sky with its tail. Few have seen it twice.',
+    { shape: 'star', main: '#3b2d7a', accent: '#ffd76a', belly: '#6b58c9', top: 'crown', eyes: 'sparkle', extra: ['startail', 'sparkles'], size: 1.0 },
+    ['bite', 'starfall', 'roar']),
+];
+
+// Who flies? Winged, ghostly, cloud and star creatures hover in the air in AR; everyone else stands on the ground.
+const ALSO_FLY = new Set(['solaris', 'twinklit', 'nyxtail', 'kitewing']);
+for (const s of SPECIES) {
+  s.look.flies ??= ALSO_FLY.has(s.id) || s.look.extra.some((e) => ['wings', 'mothwings', 'ghost', 'cloud'].includes(e));
+}
+
+export const SPECIES_BY_ID = Object.fromEntries(SPECIES.map((s) => [s.id, s]));
+
+// kind: 'hit' (damage), 'guard' (halve next hit), 'buff' (raise attack)
+export const MOVES = {
+  tackle: { name: 'Tackle', element: null, power: 40, acc: 1, kind: 'hit' },
+  scratch: { name: 'Scratch', element: null, power: 42, acc: 1, kind: 'hit' },
+  peck: { name: 'Peck', element: null, power: 42, acc: 1, kind: 'hit' },
+  bite: { name: 'Bite', element: null, power: 48, acc: 0.95, kind: 'hit' },
+  guard: { name: 'Guard', element: null, power: 0, acc: 1, kind: 'guard' },
+  roar: { name: 'Roar', element: null, power: 0, acc: 1, kind: 'buff' },
+  vine_whip: { name: 'Vine Whip', element: 'leaf', power: 62, acc: 0.92, kind: 'hit' },
+  seed_shot: { name: 'Seed Shot', element: 'leaf', power: 62, acc: 0.95, kind: 'hit' },
+  pollen_puff: { name: 'Pollen Puff', element: 'leaf', power: 62, acc: 0.92, kind: 'hit' },
+  petal_storm_s: { name: 'Petal Breeze', element: 'leaf', power: 62, acc: 0.92, kind: 'hit' },
+  spore_cloud: { name: 'Spore Cloud', element: 'leaf', power: 68, acc: 0.9, kind: 'hit' },
+  petal_storm: { name: 'Petal Storm', element: 'leaf', power: 80, acc: 0.88, kind: 'hit' },
+  ember: { name: 'Ember', element: 'flame', power: 62, acc: 0.92, kind: 'hit' },
+  flare_dash: { name: 'Flare Dash', element: 'flame', power: 68, acc: 0.9, kind: 'hit' },
+  inferno: { name: 'Inferno', element: 'flame', power: 80, acc: 0.85, kind: 'hit' },
+  solar_flare: { name: 'Solar Flare', element: 'flame', power: 88, acc: 0.88, kind: 'hit' },
+  splash: { name: 'Splash Wave', element: 'tide', power: 62, acc: 0.92, kind: 'hit' },
+  bubble_beam: { name: 'Bubble Beam', element: 'tide', power: 62, acc: 0.95, kind: 'hit' },
+  tidal_spin: { name: 'Tidal Spin', element: 'tide', power: 68, acc: 0.9, kind: 'hit' },
+  frost_breath: { name: 'Frost Breath', element: 'tide', power: 68, acc: 0.9, kind: 'hit' },
+  tsunami: { name: 'Tsunami', element: 'tide', power: 84, acc: 0.86, kind: 'hit' },
+  zap: { name: 'Zap', element: 'spark', power: 62, acc: 0.92, kind: 'hit' },
+  static_shock: { name: 'Static Shock', element: 'spark', power: 62, acc: 0.95, kind: 'hit' },
+  thunder_hop: { name: 'Thunder Hop', element: 'spark', power: 68, acc: 0.9, kind: 'hit' },
+  volt_crash: { name: 'Volt Crash', element: 'spark', power: 82, acc: 0.86, kind: 'hit' },
+  pebble_toss: { name: 'Pebble Toss', element: 'stone', power: 62, acc: 0.92, kind: 'hit' },
+  gem_shard: { name: 'Gem Shard', element: 'stone', power: 68, acc: 0.92, kind: 'hit' },
+  rockslide: { name: 'Rockslide', element: 'stone', power: 80, acc: 0.85, kind: 'hit' },
+  gust: { name: 'Gust', element: 'wind', power: 62, acc: 0.92, kind: 'hit' },
+  feather_dance: { name: 'Feather Dance', element: 'wind', power: 66, acc: 0.92, kind: 'hit' },
+  cyclone_s: { name: 'Twister', element: 'wind', power: 68, acc: 0.9, kind: 'hit' },
+  cyclone: { name: 'Cyclone', element: 'wind', power: 80, acc: 0.85, kind: 'hit' },
+  moonbeam: { name: 'Moonbeam', element: 'dream', power: 62, acc: 0.95, kind: 'hit' },
+  dream_dust: { name: 'Dream Dust', element: 'dream', power: 70, acc: 0.92, kind: 'hit' },
+  nightmare: { name: 'Nightmare', element: 'dream', power: 78, acc: 0.88, kind: 'hit' },
+  starfall: { name: 'Starfall', element: 'dream', power: 88, acc: 0.88, kind: 'hit' },
+};
+
+export const ITEMS = {
+  berry: {
+    name: 'Sweetberry', icon: '🍓', rarity: 'common',
+    desc: 'A treat. Shy monsters open up when you share one.',
+  },
+  cake: {
+    name: 'Honey Cake', icon: '🍰', rarity: 'uncommon',
+    desc: 'A fancy treat. Makes any chat go a lot better.',
+  },
+  tonic: {
+    name: 'Sparkle Tonic', icon: '🧪', rarity: 'common',
+    desc: 'Heals a buddy by 50% (in battle or from the Buddies screen).',
+  },
+  clover: {
+    name: 'Lucky Clover', icon: '🍀', rarity: 'uncommon',
+    desc: 'Triples the chance that the next monster you meet simply likes you.',
+  },
+  bell: {
+    name: 'Guardian Bell', icon: '🔔', rarity: 'rare',
+    desc: 'If you lose a battle, it rings and keeps your buddies safe. Used up when it rings.',
+  },
+  candy: {
+    name: 'Star Candy', icon: '🍬', rarity: 'rare',
+    desc: 'A buddy who eats it grows one level.',
+  },
+  feather: {
+    name: 'Moon Feather', icon: '🪶', rarity: 'rare',
+    desc: 'The next non-legendary monster you meet will want to be your friend.',
+  },
+  prism: {
+    name: 'Rainbow Prism', icon: '💎', rarity: 'legendary',
+    desc: 'A fairy treasure. Revives and fully heals your whole team, and they all grow a level.',
+  },
+};
+
+// Photo requests. kind 'color' and 'scene' are checked with on-device pixel analysis,
+// kind 'object' uses an on-device image classifier (falls back to a color hint offline).
+export const REQUESTS = [
+  { id: 'red', kind: 'color', tags: ['red', 'warm'], ask: 'something RED', line: 'Red is the color of brave hearts! Can you show me something red?' },
+  { id: 'orange', kind: 'color', tags: ['orange', 'warm'], ask: 'something ORANGE', line: 'I dream about orange things. Bring me something orange?' },
+  { id: 'yellow', kind: 'color', tags: ['yellow', 'sunny'], ask: 'something YELLOW', line: 'Yellow makes me feel like sunshine. Show me something yellow!' },
+  { id: 'green', kind: 'color', tags: ['green'], ask: 'something GREEN', line: 'Green, green, green! I want to see something green.' },
+  { id: 'blue', kind: 'color', tags: ['blue', 'water'], ask: 'something BLUE', line: 'Blue is so calm... could you find me something blue?' },
+  { id: 'purple', kind: 'color', tags: ['purple', 'night'], ask: 'something PURPLE', line: 'Purple is the rarest color, I think. Can you find one?' },
+  { id: 'pink', kind: 'color', tags: ['pink', 'cute', 'sweet'], ask: 'something PINK', line: 'Pink things are the cutest. Show me something pink, please!' },
+  { id: 'white', kind: 'color', tags: ['white', 'calm'], ask: 'something WHITE', line: 'I like things white like clouds and snow. Show me one?' },
+  { id: 'brown', kind: 'color', tags: ['brown', 'greenery'], ask: 'something BROWN', line: 'Wood, bread, chocolate... I love brown things! Show me one?' },
+  { id: 'grey', kind: 'color', tags: ['grey', 'strong', 'calm'], ask: 'something GREY like stone', line: 'Show me a strong grey stone wall or rock. It reminds me of home.' },
+  { id: 'sky', kind: 'scene', tags: ['sky', 'adventure', 'fast'], ask: 'a photo of the SKY', line: 'I want to see the sky above where you live. Take a picture for me?' },
+  { id: 'greenery', kind: 'scene', tags: ['greenery', 'calm', 'green', 'rain'], ask: 'trees, grass or plants', line: 'Show me somewhere green and leafy! Trees, grass, plants...' },
+  { id: 'sunset', kind: 'scene', tags: ['sunset', 'warm'], ask: 'a sunset (or warm glowing light)', line: 'Have you seen the sky turn orange? Show me a sunset!' },
+  { id: 'night', kind: 'scene', tags: ['night', 'lights'], ask: 'lights in the dark', line: 'I love little lights in the dark. Can you show me some?' },
+  { id: 'flower', kind: 'object', tags: ['flower', 'cute'], ask: 'a FLOWER', line: 'Flowers smell like happiness. Can you find me a flower?', labels: ['daisy', 'flower', 'rose', 'sunflower', 'pot', 'flowerpot', 'vase', 'bouquet', "yellow lady's slipper", 'rapeseed'], fallback: { colors: ['pink', 'purple', 'yellow', 'red'], min: 0.1, plus: 'green' } },
+  { id: 'fruit', kind: 'object', tags: ['fruit', 'food', 'sweet'], ask: 'some FRUIT', line: 'My tummy is rumbling... I would love to see some fruit!', labels: ['banana', 'orange', 'lemon', 'strawberry', 'pineapple', 'granny smith', 'apple', 'pomegranate', 'fig', 'custard apple', 'jackfruit', 'grape'], fallback: { colors: ['red', 'orange', 'yellow', 'green'], min: 0.25 } },
+  { id: 'food', kind: 'object', tags: ['food', 'warm'], ask: 'something DELICIOUS to eat', line: 'What do humans eat? Show me something yummy!', labels: ['pizza', 'cheeseburger', 'hotdog', 'hot dog', 'bagel', 'pretzel', 'french loaf', 'burrito', 'carbonara', 'meat loaf', 'potpie', 'plate', 'consomme', 'hot pot', 'guacamole', 'mashed potato', 'dough', 'ice cream', 'trifle', 'chocolate sauce', 'espresso', 'banana', 'strawberry', 'orange', 'soup bowl', 'wok', 'frying pan'], fallback: { colors: ['orange', 'yellow', 'red'], min: 0.25 } },
+  { id: 'sweet', kind: 'object', tags: ['sweet', 'cute'], ask: 'a SWEET treat', line: 'I heard humans have sweets... can I see one?', labels: ['ice cream', 'ice lolly', 'trifle', 'chocolate sauce', 'candy', 'confectionery', 'bakery', 'bagel', 'pretzel', 'strawberry', 'cup', 'dough'], fallback: { colors: ['pink', 'white', 'orange'], min: 0.2 } },
+  { id: 'cup', kind: 'object', tags: ['calm', 'warm'], ask: 'a CUP or MUG', line: 'What do you drink from? Show me your cup!', labels: ['cup', 'coffee mug', 'espresso', 'teapot', 'water bottle', 'beer glass', 'goblet', 'coffeepot', 'pitcher'], fallback: { colors: ['white'], min: 0.3 } },
+  { id: 'wheels', kind: 'object', tags: ['fast', 'adventure'], ask: 'something with WHEELS', line: 'Humans zoom around on round things! Show me something with wheels.', labels: ['car', 'cab', 'minivan', 'sports car', 'convertible', 'jeep', 'bicycle', 'mountain bike', 'tricycle', 'motor scooter', 'moped', 'bus', 'school bus', 'trolleybus', 'streetcar', 'pickup', 'limousine', 'wagon', 'racer', 'go-kart', 'car wheel', 'tow truck', 'trailer truck', 'moving van', 'police van', 'ambulance', 'unicycle', 'skateboard'], fallback: { colors: ['black', 'grey'], min: 0.3 } },
+  { id: 'book', kind: 'object', tags: ['calm', 'adventure'], ask: 'a BOOK', line: 'I heard books hold whole worlds inside. Show me one!', labels: ['book jacket', 'comic book', 'library', 'bookshop', 'bookcase', 'notebook', 'binder', 'menu'], fallback: { colors: ['white'], min: 0.25 } },
+  { id: 'shoes', kind: 'object', tags: ['adventure', 'fast'], ask: 'your SHOES', line: 'You walk so far every day! Show me your shoes.', labels: ['running shoe', 'sandal', 'clog', 'loafer', 'cowboy boot', 'sock', 'shoe shop'], fallback: { colors: ['black', 'white', 'grey'], min: 0.3 } },
+];
+
+export const REQUESTS_BY_ID = Object.fromEntries(REQUESTS.map((r) => [r.id, r]));
+
+// Friendly chat questions. Each answer carries tags; a monster's `likes` decide how much it enjoys the answer.
+export const CHAT_QUESTIONS = [
+  {
+    q: 'What do you like doing on a free day?',
+    a: [
+      { text: 'Napping somewhere quiet', tags: ['calm', 'sleep'] },
+      { text: 'Exploring somewhere new', tags: ['adventure', 'fast'] },
+      { text: 'Eating something tasty', tags: ['food', 'sweet'] },
+      { text: 'Playing games', tags: ['games'] },
+    ],
+  },
+  {
+    q: 'What is your favorite time of day?',
+    a: [
+      { text: 'Bright sunny noon', tags: ['sunny', 'sky'] },
+      { text: 'Sunset', tags: ['sunset', 'warm'] },
+      { text: 'Late at night', tags: ['night', 'lights'] },
+      { text: 'Rainy mornings', tags: ['rain', 'calm', 'water'] },
+    ],
+  },
+  {
+    q: 'If we were friends, where would you take me?',
+    a: [
+      { text: 'A park full of trees', tags: ['greenery', 'green', 'flower'] },
+      { text: 'The beach', tags: ['water', 'blue'] },
+      { text: 'A rooftop to see the sky', tags: ['sky', 'adventure'] },
+      { text: 'A bakery!', tags: ['food', 'sweet'] },
+    ],
+  },
+  {
+    q: 'What do you think of me?',
+    a: [
+      { text: 'You look really strong!', tags: ['strong', 'brave'] },
+      { text: 'You are super cute', tags: ['cute'] },
+      { text: 'You seem very fast', tags: ['fast'] },
+      { text: 'You seem gentle and kind', tags: ['calm'] },
+    ],
+  },
+  {
+    q: 'Which color do you like best?',
+    a: [
+      { text: 'Red or orange', tags: ['red', 'orange', 'warm'] },
+      { text: 'Blue', tags: ['blue', 'water'] },
+      { text: 'Green', tags: ['green', 'greenery'] },
+      { text: 'Purple or pink', tags: ['purple', 'pink'] },
+      { text: 'Yellow', tags: ['yellow', 'sunny'] },
+    ],
+  },
+  {
+    q: 'Are you brave?',
+    a: [
+      { text: 'Of course! Nothing scares me', tags: ['brave', 'strong'] },
+      { text: 'A little... with friends around', tags: ['cute', 'calm'] },
+      { text: 'I run away really fast', tags: ['fast', 'games'] },
+    ],
+  },
+  {
+    q: 'What should we eat together?',
+    a: [
+      { text: 'Fresh fruit', tags: ['fruit', 'sweet'] },
+      { text: 'Something spicy and hot', tags: ['warm', 'brave', 'food'] },
+      { text: 'Cake and candy', tags: ['sweet', 'food'] },
+      { text: 'Just water, thanks', tags: ['water', 'calm'] },
+    ],
+  },
+];
+
+// ---- Fairies ----
+export const FAIRY_KINDS = {
+  trickster: {
+    name: 'Trickster Fairy', color: '#ff7ad9', glow: '#ffd1f3',
+    hello: ['Hee hee! A human! Play with me, play with me!', 'Boo! Did I scare you? No? Hmph. Then entertain me!', 'Psst... want a present? You have to earn it~'],
+  },
+  quizzy: {
+    name: 'Question Fairy', color: '#7ad7ff', glow: '#d4f4ff',
+    hello: ['Oh! Oh! I have a question for you!', 'Human! I have been wondering about something all day...', 'Hello hello! Answer me this, please!'],
+  },
+};
+
+// Fairy tasks. type: 'quiz' (one right answer), 'opinion' (any answer makes them happy),
+// 'guess' (luck), 'photo' (show a color/scene), 'give' (hand over an item), 'riddle'.
+export const FAIRY_TASKS = {
+  trickster: [
+    { type: 'guess', text: 'I hid a sparkle in one of my hands. Which one? Hee hee!', options: ['Left hand', 'Right hand'] },
+    { type: 'guess', text: 'Three flowers, one is really me in disguise! Which one?', options: ['🌸', '🌼', '🌺'] },
+    { type: 'riddle', text: 'Riddle time! What has hands but cannot clap?', options: ['A clock', 'A fairy', 'A glove'], answer: 0 },
+    { type: 'riddle', text: 'Riddle! What gets wetter the more it dries?', options: ['A sponge', 'A towel', 'A cloud'], answer: 1 },
+    { type: 'riddle', text: 'Riddle! What has keys but opens no locks?', options: ['A piano', 'A janitor', 'A treasure map'], answer: 0 },
+    { type: 'riddle', text: 'What goes up but never comes down?', options: ['A balloon', 'Your age', 'A bird'], answer: 1 },
+    { type: 'photo', request: 'pink', text: 'I want something PINK! Pink pink pink! Show me or no present!' },
+    { type: 'photo', request: 'yellow', text: 'Find me something as yellow as my favorite candy!' },
+    { type: 'photo', request: 'sky', text: 'I am bored of flying. Show me the sky from down there!' },
+    { type: 'give', item: 'berry', text: 'I smell Sweetberries in your bag... give me one? Pretty please?' },
+    { type: 'opinion', text: 'Tell me a joke! A good one!', options: ['Why did the fairy cross the road? To get to the other SIDE-kick!', 'I would tell you a pizza joke, but it is too cheesy.', 'Knock knock. ...Who is there? ...Not me, hee hee!'] },
+  ],
+  quizzy: [
+    { type: 'quiz', text: 'How many legs does a spider have?', options: ['6', '8', '10'], answer: 1 },
+    { type: 'quiz', text: 'Which planet is known as the red planet?', options: ['Venus', 'Mars', 'Jupiter'], answer: 1 },
+    { type: 'quiz', text: 'What do bees make?', options: ['Milk', 'Honey', 'Silk'], answer: 1 },
+    { type: 'quiz', text: 'What color do you get when you mix blue and yellow?', options: ['Green', 'Purple', 'Orange'], answer: 0 },
+    { type: 'quiz', text: 'Which of these is NOT a fruit?', options: ['Tomato', 'Carrot', 'Cucumber'], answer: 1 },
+    { type: 'quiz', text: 'How many days are in a leap year?', options: ['365', '366', '364'], answer: 1 },
+    { type: 'quiz', text: 'What is the largest ocean on Earth?', options: ['Atlantic', 'Indian', 'Pacific'], answer: 2 },
+    { type: 'quiz', text: 'Where does the sun rise?', options: ['East', 'West', 'North'], answer: 0 },
+    { type: 'opinion', text: 'What is your favorite season? I collect answers!', options: ['Spring 🌸', 'Summer ☀️', 'Autumn 🍂', 'Winter ❄️'] },
+    { type: 'opinion', text: 'If you could fly, where would you go first?', options: ['Over the ocean', 'Up to the clouds', 'To see my friends', 'To the moon!'] },
+    { type: 'opinion', text: 'What makes you happy?', options: ['Good food', 'My friends', 'Adventures', 'A cozy nap'] },
+    { type: 'photo', request: 'greenery', text: 'What does a human tree look like? Show me some trees or plants!' },
+    { type: 'photo', request: 'blue', text: 'I am researching the color blue. Can you show me something blue?' },
+  ],
+};
+
+export const FAIRY_SUCCESS = [
+  'Yay! You are the best human ever!', 'Hee hee, that was fun! Pick a present!', 'Wonderful! A gift for you~',
+  'I like you! Choose something nice!',
+];
+export const FAIRY_FAIL = [
+  'Wrong~! Hee hee! Better luck next time!', 'Hmm, no, that is not it! Bye-bye!', 'Pfft! Not even close! *giggles away*',
+];
+
+// Things monsters say
+export const LINES = {
+  luck: [
+    'Hey... I like you! Can I come with you?', 'You smell like adventure. Let me be your friend!',
+    'I have been waiting for someone like you! Let us go together!', 'Hi hi! You seem nice. I want to be your buddy!',
+  ],
+  shyHide: ['*hides and peeks at you nervously*', '*trembles a little... and stares at your bag*'],
+  proudLow: ['Hmph. You and your little friends are not strong enough for me.', 'Come back when you are stronger, human.'],
+  proudHigh: ['Your partners are strong... I respect that. I will walk with you.', 'Hm. You are worthy. Lead the way.'],
+  fierce: ['GRRRR! Go away, human!', '*growls and bares its teeth*', 'Humans... I do not trust them.'],
+  chatWin: ['That was fun! Can I stay with you?', 'I like talking to you! Let us be friends!', 'You get me! Take me with you!'],
+  chatLose: ['Hmm... we are not quite the same. Maybe another time.', '*yawns* ...I think I will go now.'],
+  playIntro: ['Let us play a game! Guess which paw hides the acorn!', 'Game time! Which paw is it in? Win two times!'],
+  requestThanks: ['Yes! That is exactly it! I will be your friend!', 'Wow... it is beautiful! Thank you! Let us be friends forever!'],
+  requestNope: ['Hmm, that is not quite it...', 'No no, that is not what I meant! Try again?'],
+};
