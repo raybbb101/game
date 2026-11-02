@@ -1,7 +1,22 @@
 # Wildkin
 
-A real-world monster adventure for phones. Walk around with GPS on a real map (OpenStreetMap).
-When you get right next to a monster or fairy, tap it and it appears in AR through your camera.
+A real-world monster adventure for phones. Walk around with GPS on a real map (OpenStreetMap / CARTO).
+When you get right next to a monster or fairy, tap it and it appears **in 3D, in AR**, through your camera.
+
+## 3D & AR
+- **50 species** across 7 elements (Leaf, Flame, Tide, Spark, Stone, Wind, Dream) and 4 rarities, each a
+  procedurally sculpted 3D model: soft-vinyl-toy materials with clearcoat and sheen, glossy eyes, painted textures
+  (bellies, spots, stripes, glowing lava cracks) and parts such as ears, horns, antlers, crowns, flames,
+  moth wings, shells, crystals and fins. They breathe, blink, wag, flap and flicker, and react with hops, hearts,
+  attacks, hits and fainting.
+- **AR**: the rear camera fills the screen and a real-time 3D scene (PBR lighting, soft shadows on the floor) is
+  drawn on top. The 3D camera follows the phone's motion sensors, so the creature stays put in the room.
+  Swipe to spin it around, tap to pet it.
+- **AR+** (phones with WebXR, e.g. Android Chrome): real floor detection — tap to place the creature on the ground.
+- **No camera?** It appears in a 3D meadow (day or starry night with fireflies).
+- **3D battles**: your buddy and the wild monster face off, with elemental projectiles and particle bursts.
+- **Monsterdex**: all 50 species, shown as silhouettes until you meet them.
+- The same 3D models are rendered to portraits for the map, menus and cards.
 
 ## Making monster buddies — 3 ways
 
@@ -41,7 +56,7 @@ GPS and camera need HTTPS (or `localhost`). From the repo root:
 
 ```sh
 python3 -m http.server 8000   # open http://localhost:8000/wildkin/
-node wildkin/tools/test.mjs -v  # logic tests: spawns, battle balance, photo judging, presents
+node wildkin/tools/test.mjs -v  # tests: spawns, battle balance, photo judging, presents, every 3D model builds
 ```
 
 Deployed with the rest of the repo to GitHub Pages at `/wildkin/`.
@@ -51,9 +66,12 @@ src/data.js       species, personalities, moves, items, photo requests, fairy ta
 src/game.js       stats, spawns, fairies, luck, presents, save format
 src/battle.js     turn-based battle rules
 src/scan.js       photo analysis (colors / scenes / MobileNet)
-src/art.js        procedural SVG monsters and fairies
-src/ar.js         camera + orientation AR
+src/model3d.js    procedural 3D monster & fairy builder + animation
+src/portraits.js  3D portraits for map/menus (cached)
+src/ar.js         3D AR scene: camera passthrough, sensors, WebXR AR+, meadow, battle FX
+src/art.js        flat SVG fallback art (no WebGL)
 src/encounter.js  the AR encounter flows (luck, talk, photo requests, battle, fairies)
 src/main.js       map, GPS / explore movement, menus
 vendor/leaflet    Leaflet 1.9.4 (BSD-2)
+vendor/three      Three.js r170 + RoomEnvironment (MIT)
 ```

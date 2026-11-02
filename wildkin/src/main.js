@@ -5,7 +5,7 @@ import {
   playerXpToNext, xpToNext, displayName, makeMonster,
 } from './game.js';
 import { distance, bearing, offset, formatDuration, formatDistance, clamp } from './util.js';
-import { monsterSVG, fairySVG } from './art.js';
+import { monsterArt as monsterSVG, fairyArt as fairySVG } from './portraits.js';
 import { S, load, persist, reset, team, useItem } from './store.js';
 import { $, h, toast, openSheet, pushSheet, refreshSheet, closeSheet, initSheet, modal, sfx, sound } from './ui.js';
 import { openMonster, openFairy, setEncounterHooks, pickPhoto, judgeQuestPhoto, howInfo } from './encounter.js';
@@ -79,6 +79,7 @@ function showStarters() {
         const mon = makeMonster({ species: id, level: 5, personality: 'friendly' }, 'starter');
         mon.inTeam = true;
         S.save.buddies.push(mon);
+        S.save.dex = { [id]: 'friend' };
         persist();
         $('#intro').classList.remove('show');
         startGame(true);
@@ -119,8 +120,10 @@ function initMap() {
     zoomControl: false, attributionControl: true, minZoom: 15, maxZoom: 20, zoomSnap: 0.25,
     inertia: true, tap: false,
   }).setView([world.me.lat, world.me.lng], 18.5);
-  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 20, maxNativeZoom: 19, attribution: '&copy; OpenStreetMap contributors',
+  // CARTO Voyager: clean, colorful street map with crisp retina tiles (OpenStreetMap data)
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+    maxZoom: 20, maxNativeZoom: 20, subdomains: 'abcd', detectRetina: false,
+    attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
   }).addTo(world.map);
   world.reachCircle = L.circle([world.me.lat, world.me.lng], { radius: reach(), className: 'reach-circle', interactive: false }).addTo(world.map);
   world.playerMarker = L.marker([world.me.lat, world.me.lng], {
@@ -438,10 +441,47 @@ function openBuddies(pickFor) {
     const others = s.buddies.filter((b) => !b.inTeam);
     return h('div', {},
       pickFor ? null : h('p', { class: 'hint' }, `Your battle team (${tm.length}/3) ★ — tap a buddy for details. Buddies heal fully after 20 minutes of rest.`),
+      pickFor ? null : h('button', { class: 'dex-banner', onclick: () => pushSheet('Monsterdex', dexView) },
+        h('span', {}, '📖'), h('div', {}, h('b', {}, 'Monsterdex'), h('small', {}, `${dexCount().friends} befriended · ${dexCount().seen} seen · ${SPECIES.length} species`)), h('i', {}, '›')),
       h('div', { class: 'buddy-grid' }, [...tm, ...others].map((m) => buddyCard(m, () => (pickFor ? applyItem(pickFor, m) : pushSheet(displayName(m), () => buddyDetail(m)))))),
-      pickFor ? null : h('p', { class: 'hint center' }, `Species found ${new Set(s.buddies.map((b) => b.species)).size}/${SPECIES.length}`),
     );
   });
+}
+
+function dexCount() {
+  const friends = new Set(S.save.buddies.map((b) => b.species));
+  for (const id of Object.keys(S.save.dex || {})) if (S.save.dex[id] === 'friend') friends.add(id);
+  const seen = new Set([...friends, ...Object.keys(S.save.dex || {})]);
+  return { friends: friends.size, seen: seen.size, friendSet: friends, seenSet: seen };
+}
+
+function dexView() {
+  const { friendSet, seenSet } = dexCount();
+  const byEl = Object.keys(ELEMENTS);
+  return h('div', { class: 'dex' }, byEl.map((el) => h('div', {},
+    h('h4', { class: 'dex-el', style: { color: ELEMENTS[el].color } }, `${ELEMENTS[el].icon} ${ELEMENTS[el].name}`),
+    h('div', { class: 'dex-grid' }, SPECIES.filter((x) => x.element === el).map((sp, i) => {
+      const known = seenSet.has(sp.id);
+      const friend = friendSet.has(sp.id);
+      return h('button', {
+        class: `dex-card ${known ? '' : 'unknown'} ${friend ? 'friend' : ''} ${sp.rarity}`,
+        onclick: () => known && pushSheet(sp.name, () => dexDetail(sp, friend)),
+      },
+      h('div', { class: 'art', html: monsterSVG(sp.id, { size: 84 }) }),
+      h('b', {}, known ? sp.name : '???'),
+      h('small', {}, friend ? '★ Buddy' : known ? 'Seen' : RARITY[sp.rarity].label));
+    })))));
+}
+
+function dexDetail(sp, friend) {
+  const el = ELEMENTS[sp.element];
+  return h('div', { class: 'detail' },
+    h('div', { class: 'detail-art', html: monsterSVG(sp.id, { size: 200 }) }),
+    h('div', { class: 'chips-row', html: `<span class="chip el" style="--c:${el.color}">${el.icon} ${el.name}</span><span class="chip rar" style="--c:${RARITY[sp.rarity].color}">${RARITY[sp.rarity].label}</span><span class="chip">${friend ? '★ Befriended' : '👀 Seen'}</span><span class="chip">📏 ${Math.round(sp.look.size * 100)} cm</span>` }),
+    h('p', { class: 'blurb' }, sp.blurb),
+    h('p', { class: 'hint center' }, `Usually: ${Object.keys(sp.personalities).map((p) => `${PERSONALITIES[p].emoji} ${PERSONALITIES[p].label}`).join(' · ')}`),
+    h('p', { class: 'hint center' }, `Loves: ${sp.likes.join(', ')}`),
+  );
 }
 
 function buddyDetail(mon) {

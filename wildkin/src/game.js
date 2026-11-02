@@ -197,9 +197,11 @@ export function luckChance(wild, save) {
 export function pickRequest(wild, seed) {
   const sp = SPECIES_BY_ID[wild.species];
   const r = rng(seed);
-  const scored = REQUESTS.map((q) => ({ q, s: q.tags.filter((t) => sp.likes.includes(t)).length + r() * 0.5 }));
+  const scored = REQUESTS.map((q) => ({ q, hits: q.tags.filter((t) => sp.likes.includes(t)).length }))
+    .map((x) => ({ ...x, s: x.hits + r() * 0.5 }));
   scored.sort((a, b) => b.s - a.s);
-  return r.pick(scored.slice(0, 4)).q;
+  const good = scored.filter((x) => x.hits > 0).slice(0, 4);
+  return r.pick(good.length ? good : scored.slice(0, 4)).q;
 }
 
 export function chatScore(answerTags, likes) {
@@ -253,6 +255,7 @@ export function newSave(name) {
     stats: { befriended: 0, battlesWon: 0, battlesLost: 0, fairies: 0, photos: 0, lost: 0 },
     settings: { sound: true, mode: 'gps', ar: true },
     lastPos: null,
+    dex: {}, // species id -> 'seen' | 'friend'
   };
 }
 

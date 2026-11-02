@@ -221,4 +221,19 @@ test('luck and save', () => {
   assert.equal(typeof isNight(new Date()), 'boolean');
 });
 
+const { buildMonster, buildFairy, Actor } = await import('../src/model3d.js');
+test('every species builds a sane 3D model and animates', () => {
+  for (const s of SPECIES) {
+    const m = buildMonster(s.id);
+    assert.ok(m.top > 0.95 && m.top < 2.2, `${s.id} top ${m.top}`);
+    assert.ok(m.width > 0.5 && m.width < 4, `${s.id} width ${m.width}`);
+    const a = new Actor(m);
+    for (const act of ['hop', 'attack', 'hit', 'love', 'faint']) { a.play(act); for (let i = 0; i < 70; i++) a.update(1 / 60); }
+    let bad = false;
+    m.root.traverse((o) => { if (o.geometry) { const p = o.geometry.attributes.position.array; for (let i = 0; i < p.length; i++) if (!Number.isFinite(p[i])) bad = true; } });
+    assert.ok(!bad, `${s.id} has NaN vertices`);
+  }
+  for (const k of ['trickster', 'quizzy']) new Actor(buildFairy(k)).update(0.1);
+});
+
 console.log(process.exitCode ? 'Some tests failed.' : `All ${passed} tests passed.`);

@@ -9,8 +9,11 @@ import {
 } from './game.js';
 import { createBattle, takeTurn, activeFighter, rollLoss, xpReward } from './battle.js';
 import { scanPhoto } from './scan.js';
-import { monsterSVG, fairySVG } from './art.js';
-import { startAR, stopAR, anchorHere, requestSensors, cameraOn } from './ar.js';
+import { monsterArt } from './portraits.js';
+import {
+  startAR, stopAR, anchorHere, requestSensors, setCamera, showMonster, showFairy, showBuddy, hideBuddy,
+  act as arAct, attack, sparkleAt, setPetHandler, xrSupported, startXR,
+} from './ar.js';
 import { S, persist, team, addItem, useItem } from './store.js';
 import { $, h, sleep, toast, modal, sfx, vibrate } from './ui.js';
 import { R, rng } from './util.js';
@@ -27,25 +30,35 @@ export function setEncounterHooks({ closed }) {
 
 // ---------- Screen plumbing ----------
 
-function openScene(actorHTML, actorClass) {
+function openScene(show) {
   requestSensors();
   const scene = $('#encounter');
-  $('#ar-actor').className = `actor ${actorClass} enter`;
-  $('#ar-actor').innerHTML = actorHTML;
+  $('#ar-actor').className = 'actor';
+  $('#ar-actor').innerHTML = '';
   $('#bubble').classList.remove('show');
   $('#enc-panel').replaceChildren();
   $('#battle-hud').hidden = true;
   scene.classList.remove('battling');
   scene.classList.add('show');
   startAR(S.save.settings.ar);
-  setTimeout(anchorHere, 400);
-  $('#enc-ar').onclick = () => {
-    S.save.settings.ar = !cameraOn();
+  show();
+  $('#enc-ar').onclick = async () => {
+    const on = await setCamera(!scene.classList.contains('camera-on'));
+    S.save.settings.ar = on;
     persist();
-    stopAR();
-    startAR(S.save.settings.ar);
-    toast(S.save.settings.ar ? 'AR camera on' : 'AR camera off');
+    toast(on ? 'AR camera on' : 'AR camera off');
   };
+  const xrBtn = $('#enc-xr');
+  xrBtn.hidden = true;
+  xrSupported().then((ok) => { xrBtn.hidden = !ok; });
+  xrBtn.onclick = async () => {
+    const ok = await startXR(() => toast('Back to normal AR'));
+    if (!ok) toast('AR+ is not available on this device');
+  };
+  setPetHandler(() => {
+    sfx('happy');
+    vibrate(15);
+  });
   $('#enc-close').onclick = () => closeScene();
   $('#enc-recenter').onclick = () => anchorHere();
 }
@@ -76,11 +89,8 @@ async function say(text, { wait = 900 } = {}) {
   await sleep(wait);
 }
 
-function act(cls) {
-  const a = $('#ar-actor');
-  a.classList.remove('hop', 'shake', 'sad', 'love', 'enter');
-  void a.offsetWidth;
-  a.classList.add(cls);
+function act(name, who = 'foe') {
+  return arAct(name, who);
 }
 
 // options: [{label, value, disabled, cls, sub}] -> Promise(value)
@@ -140,6 +150,8 @@ export async function befriend(data, how) {
   if (team().length < 3) mon.inTeam = true;
   S.save.buddies.push(mon);
   S.save.stats.befriended++;
+  const isNew = (S.save.dex ||= {})[data.species] !== 'friend';
+  S.save.dex[data.species] = 'friend';
   const sp = SPECIES_BY_ID[data.species];
   const xp = RARITY[sp.rarity].xp + (how === 'battle' ? 15 : 0);
   const ups = givePlayerXp(S.save, xp);
@@ -147,8 +159,8 @@ export async function befriend(data, how) {
   sfx('join');
   vibrate([30, 40, 60]);
   await modal({
-    art: `<div class="celebrate">${monsterSVG(data.species, { size: 170 })}</div>`,
-    title: `${sp.name} is now your buddy!`,
+    art: `<div class="celebrate">${monsterArt(data.species, { size: 170 })}</div>`,
+    title: `${isNew ? '✨ New! ' : ''}${sp.name} is now your buddy!`,
     text: `${HOW[how].icon} <b>${HOW[how].label}</b> — ${HOW[how].text}<br><span class="xp">+${xp} XP${ups ? ` · Level up! You are now Lv ${S.save.level}` : ''}</span>${mon.inTeam ? '' : '<br><small>Your team is full, so it is resting in Buddies.</small>'}`,
     choices: [{ label: 'Yay!', value: true, cls: 'primary' }],
   });
@@ -179,8 +191,13 @@ export async function openMonster(spawn) {
   cur = { spawn, wild, busy: false };
   const mem = memory.get(spawn.id) || {};
   memory.set(spawn.id, mem);
+  S.save.dex ||= {};
+  if (!S.save.dex[spawn.species]) {
+    S.save.dex[spawn.species] = 'seen';
+    persist();
+  }
 
-  openScene(monsterSVG(spawn.species, { size: 260 }), `monster ${sp.rarity}`);
+  openScene(() => showMonster(spawn.species));
   $('#enc-title').innerHTML = `<b>${sp.name}</b><span class="lv">Lv ${spawn.level}</span>
     <span class="chip el" style="--c:${el.color}">${el.icon} ${el.name}</span>
     <span class="chip">${pers.emoji} ${pers.label}</span>
@@ -420,7 +437,7 @@ export async function judgeQuestPhoto(quest, file) {
     persist();
     sfx('happy');
     await modal({
-      art: `<div class="photo-pair"><img src="${res.url}" alt="your photo"><div>${monsterSVG(sp.id, { size: 110, cls: 'love' })}</div></div>`,
+      art: `<div class="photo-pair"><img src="${res.url}" alt="your photo"><div>${monsterArt(sp.id, { size: 110, cls: 'love' })}</div></div>`,
       title: `${sp.name} loves it!`,
       text: `“${rng(quest.startedAt).pick(LINES.requestThanks)}”${viaNote}`,
       choices: [{ label: 'Hooray!', value: true, cls: 'primary' }],
@@ -431,7 +448,7 @@ export async function judgeQuestPhoto(quest, file) {
   persist();
   sfx('sad');
   await modal({
-    art: `<div class="photo-pair"><img src="${res.url}" alt="your photo"><div>${monsterSVG(sp.id, { size: 110, cls: 'sad' })}</div></div>`,
+    art: `<div class="photo-pair"><img src="${res.url}" alt="your photo"><div>${monsterArt(sp.id, { size: 110, cls: 'sad' })}</div></div>`,
     title: 'Not quite...',
     text: `“${rng(Date.now()).pick(LINES.requestNope)} I wanted <b>${req.ask}</b>.”${res.seen ? `<br><small>It thinks it sees: ${res.seen.split(',')[0]}</small>` : ''}${viaNote}`,
     choices: [{ label: 'I will keep looking', value: true, cls: 'primary' }],
@@ -449,7 +466,7 @@ function hpBar(f) {
 function drawBattle(b) {
   const me = activeFighter(b);
   $('#bh-foe').innerHTML = `<b>${b.foe.name}</b> <span class="lv">Lv ${b.foe.mon.level}</span> ${ELEMENTS[b.foe.element].icon}${hpBar(b.foe)}`;
-  $('#bh-you').innerHTML = `<div class="bh-art">${monsterSVG(me.mon.species, { size: 74 })}</div><div><b>${me.name}</b> <span class="lv">Lv ${me.mon.level}</span> ${ELEMENTS[me.element].icon}${hpBar(me)}<div class="bench">${b.you.map((f, i) => `<i class="${f.hp > 0 ? 'ok' : 'down'} ${i === b.active ? 'cur' : ''}"></i>`).join('')}</div></div>`;
+  $('#bh-you').innerHTML = `<div class="bh-art">${monsterArt(me.mon.species, { size: 74 })}</div><div><b>${me.name}</b> <span class="lv">Lv ${me.mon.level}</span> ${ELEMENTS[me.element].icon}${hpBar(me)}<div class="bench">${b.you.map((f, i) => `<i class="${f.hp > 0 ? 'ok' : 'down'} ${i === b.active ? 'cur' : ''}"></i>`).join('')}</div></div>`;
 }
 
 function floatText(text, target, cls = '') {
@@ -475,7 +492,9 @@ async function battle() {
   $('#bubble').classList.remove('show');
   const log = $('#battle-log');
   log.textContent = `Go, ${activeFighter(b).name}!`;
+  showBuddy(activeFighter(b).mon.species);
   drawBattle(b);
+  await sleep(600);
 
   while (!b.over) {
     const me = activeFighter(b);
@@ -507,31 +526,47 @@ async function battle() {
       log.textContent = ev.text;
       if (ev.kind === 'hit') {
         const target = ev.target === 'foe' ? 'foe' : 'you';
+        await attack(ev.who, ev.element, { crit: ev.mult > 1 });
         sfx(ev.mult > 1 ? 'super' : 'hit');
-        if (target === 'foe') act('shake');
-        else {
+        if (target === 'you') {
           $('#bh-you').classList.remove('hurt');
           void $('#bh-you').offsetWidth;
           $('#bh-you').classList.add('hurt');
           vibrate(40);
         }
         floatText(`-${ev.dmg}`, target, ev.mult > 1 ? 'crit' : '');
-      } else if (ev.kind === 'miss') sfx('miss');
-      else if (ev.kind === 'faint') {
+      } else if (ev.kind === 'miss') {
+        await attack(ev.who, ev.element, { hit: false });
+        sfx('miss');
+      } else if (ev.kind === 'faint') {
         sfx('faint');
-        if (ev.who === 'foe') act('sad');
-      } else if (ev.kind === 'heal') floatText('+HP', 'you', 'heal');
-      else if (ev.kind === 'buff' || ev.kind === 'guard') {
-        if (ev.who === 'foe') act('hop');
+        act('faint', ev.who);
+      } else if (ev.kind === 'heal') {
+        floatText('+HP', 'you', 'heal');
+        sparkleAt('you', '#5fd38d');
+      } else if (ev.kind === 'switch') {
+        showBuddy(activeFighter(b).mon.species);
+      } else if (ev.kind === 'buff') {
+        act('hop', ev.who);
+        sparkleAt(ev.who, '#ff6b6b');
+      } else if (ev.kind === 'guard') {
+        act('spin', ev.who);
+        sparkleAt(ev.who, '#7cc4ff');
       }
       drawBattle(b);
-      await sleep(850);
+      await sleep(ev.kind === 'hit' ? 450 : 750);
     }
   }
 
   // write battle damage back to your buddies
   for (const f of b.you) setHp(f.mon, f.hp);
   cur.busy = false;
+  if (b.over === 'win') {
+    act('wave', 'you');
+    await sleep(900);
+  }
+  hideBuddy();
+  act('enter');
   $('#battle-hud').hidden = true;
   $('#encounter').classList.remove('battling');
 
@@ -574,7 +609,7 @@ async function battle() {
   await say('Hmph. Too weak!', { wait: 500 });
   sfx('sad');
   await modal({
-    art: lost ? `<div class="gone">${monsterSVG(lost.species, { size: 130, cls: 'sad' })}</div>` : bell ? '<div class="big-emoji">🔔</div>' : '',
+    art: lost ? `<div class="gone">${monsterArt(lost.species, { size: 130, cls: 'sad' })}</div>` : bell ? '<div class="big-emoji">🔔</div>' : '',
     title: 'You lost the battle...',
     text: lost
       ? `<b>${displayName(lost)}</b> was so upset by the defeat that it ran off with the wild ${SPECIES_BY_ID[wild.species].name}. 💔<br><small>Train your team and pick good element matchups!</small>`
@@ -591,7 +626,7 @@ async function battle() {
 export async function openFairy(fairy) {
   const k = FAIRY_KINDS[fairy.fairy];
   cur = { spawn: fairy, busy: false };
-  openScene(fairySVG(fairy.fairy, 200), `fairy ${fairy.fairy}`);
+  openScene(() => showFairy(fairy.fairy));
   $('#enc-title').innerHTML = `<b>${k.name}</b><span class="chip" style="--c:${k.color}">${fairy.fairy === 'trickster' ? '😈 Mischievous' : '❓ Curious'}</span>`;
   sfx('fairy');
   await sleep(500);
@@ -694,9 +729,7 @@ async function fairyEnd(fairy, success, already, bonus = 0.2) {
       sfx('sad');
       await say(rng(fairy.seed).pick(FAIRY_FAIL));
     }
-    act('enter');
-    $('#ar-actor').classList.add('flyaway');
-    await sleep(900);
+    await act('flyaway');
     return closeScene();
   }
   act('love');
@@ -722,8 +755,7 @@ async function fairyEnd(fairy, success, already, bonus = 0.2) {
   const it = ITEMS[id.id];
   await say(`Here you go: ${it.icon} ${it.name}${id.qty > 1 ? ` ×${id.qty}` : ''}! Bye-bye~`, { wait: 700 });
   toast(`+25 XP${ups ? ` · Level up! Lv ${S.save.level}` : ''}`);
-  $('#ar-actor').classList.add('flyaway');
-  await sleep(800);
+  await act('flyaway');
   closeScene();
 }
 

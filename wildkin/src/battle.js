@@ -55,13 +55,13 @@ function useMove(b, att, def, moveId, r, ev) {
     return;
   }
   if (r() > move.acc) {
-    ev.push({ who: att.side, kind: 'miss', text: `${att.name} used ${move.name}... but missed!` });
+    ev.push({ who: att.side, kind: 'miss', element: move.element, text: `${att.name} used ${move.name}... but missed!` });
     return;
   }
   const { dmg, mult } = damage(att, def, move, r);
   def.hp = Math.max(0, def.hp - dmg);
   const note = mult > 1 ? ' It is super effective!' : mult < 1 ? ' It is not very effective...' : '';
-  ev.push({ who: att.side, kind: 'hit', target: def.side, dmg, mult, text: `${att.name} used ${move.name}!${note}` });
+  ev.push({ who: att.side, kind: 'hit', target: def.side, dmg, mult, element: move.element || att.element, text: `${att.name} used ${move.name}!${note}` });
   def.guard = false;
   if (def.hp === 0) ev.push({ who: def.side, kind: 'faint', text: `${def.name} fainted!` });
 }

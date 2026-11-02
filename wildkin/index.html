@@ -69,6 +69,7 @@
   <section id="encounter" class="screen">
     <video id="cam" playsinline muted autoplay></video>
     <div id="ar-backdrop"></div>
+    <canvas id="ar-canvas"></canvas>
     <div id="ar-anchor">
       <div id="bubble" class="bubble"></div>
       <div id="ar-actor" class="actor"></div>
@@ -80,6 +81,7 @@
       <div class="enc-tools">
         <button id="enc-recenter" class="round-btn" aria-label="Bring it in front of me">🎯</button>
         <button id="enc-ar" class="round-btn" aria-label="Toggle AR camera">AR</button>
+        <button id="enc-xr" class="round-btn xr-btn" aria-label="AR+ place on the floor" hidden>AR+</button>
       </div>
     </div>
     <div id="battle-hud" hidden>

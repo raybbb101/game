@@ -11,7 +11,7 @@ export function load() {
     if (raw) {
       const data = JSON.parse(raw);
       // fill in fields added in later versions
-      S.save = { ...newSave(data.name), ...data, flags: { ...newSave('').flags, ...data.flags }, stats: { ...newSave('').stats, ...data.stats }, settings: { ...newSave('').settings, ...data.settings } };
+      S.save = { ...newSave(data.name), ...data, flags: { ...newSave('').flags, ...data.flags }, stats: { ...newSave('').stats, ...data.stats }, settings: { ...newSave('').settings, ...data.settings }, dex: { ...(data.dex || {}) } };
       return true;
     }
   } catch (e) {
