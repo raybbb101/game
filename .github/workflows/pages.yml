@@ -27,6 +27,8 @@ jobs:
           node-version: 22
       - name: Verify every level is solvable
         run: node tools/check-levels.mjs
+      - name: Wildkin logic tests
+        run: node wildkin/tools/test.mjs
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

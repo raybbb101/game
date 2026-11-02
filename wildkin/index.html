@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#2a2350" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Wildkin" />
+  <meta name="description" content="Walk the real world, meet monsters in AR and make them your buddies — by talking, battling, showing them photos, or pure luck." />
+  <title>Wildkin</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="icons/icon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="vendor/leaflet/leaflet.css" />
+  <link rel="stylesheet" href="style.css" />
+  <script src="vendor/leaflet/leaflet.js"></script>
+</head>
+<body>
+  <div id="loading" class="screen show"><div class="spinner"></div></div>
+
+  <!-- First launch -->
+  <section id="intro" class="screen">
+    <div class="intro-sky"><i></i><i></i><i></i></div>
+    <div id="intro-step1" class="intro-card">
+      <p class="eyebrow">a real-world monster adventure</p>
+      <h1>Wildkin</h1>
+      <p class="story">Monsters and fairies are hiding all around your town. Most of them love humans and want a friend — some only respect the strong. Go find yours!</p>
+      <label class="field"><span>Your name</span><input id="intro-name" maxlength="16" placeholder="Explorer" autocomplete="nickname" /></label>
+      <button id="intro-go" class="btn primary big">Start adventure</button>
+    </div>
+    <div id="intro-step2" class="intro-card" hidden>
+      <p class="eyebrow">every explorer needs a partner</p>
+      <h2>Choose your first buddy</h2>
+      <div id="starter-list" class="starter-list"></div>
+    </div>
+  </section>
+
+  <!-- Map -->
+  <div id="app">
+    <div id="map"></div>
+    <header id="topbar">
+      <div class="tb-player">
+        <div class="avatar" id="tb-avatar"></div>
+        <div class="tb-info">
+          <div><b id="tb-name"></b> <span id="tb-level" class="lv"></span> <span id="tb-flags"></span></div>
+          <div class="xpbar"><i id="tb-xp"></i></div>
+        </div>
+      </div>
+      <button id="gps-chip" class="chip-btn"></button>
+    </header>
+    <button id="btn-center" class="fab" aria-label="Center on me">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.5" /><path d="M12 2v4M12 18v4M2 12h4M18 12h4" /></svg>
+    </button>
+    <nav id="dock">
+      <button id="dock-buddies"><span>🐾</span>Buddies</button>
+      <button id="dock-bag"><span>🎒</span>Bag</button>
+      <button id="dock-nearby" class="main"><span>📡</span>Nearby</button>
+      <button id="dock-quests"><span>👣</span>Quests<i id="badge-quests" class="badge" hidden></i></button>
+      <button id="dock-me"><span>🙂</span>Me</button>
+    </nav>
+  </div>
+
+  <!-- AR encounter -->
+  <section id="encounter" class="screen">
+    <video id="cam" playsinline muted autoplay></video>
+    <div id="ar-backdrop"></div>
+    <div id="ar-anchor">
+      <div id="bubble" class="bubble"></div>
+      <div id="ar-actor" class="actor"></div>
+    </div>
+    <div id="ar-hint"></div>
+    <div class="enc-top">
+      <button id="enc-close" class="round-btn" aria-label="Leave">✕</button>
+      <div id="enc-title"></div>
+      <div class="enc-tools">
+        <button id="enc-recenter" class="round-btn" aria-label="Bring it in front of me">🎯</button>
+        <button id="enc-ar" class="round-btn" aria-label="Toggle AR camera">AR</button>
+      </div>
+    </div>
+    <div id="battle-hud" hidden>
+      <div id="bh-foe" class="bcard foe"></div>
+      <div id="battle-log"></div>
+      <div id="bh-you" class="bcard you"></div>
+    </div>
+    <div id="enc-panel"></div>
+    <div id="fx"></div>
+  </section>
+
+  <!-- Sheets, modals, toasts -->
+  <div id="sheet">
+    <div class="sheet-card">
+      <header>
+        <button id="sheet-back" class="round-btn" hidden aria-label="Back">‹</button>
+        <h2 id="sheet-title"></h2>
+        <button id="sheet-close" class="round-btn" aria-label="Close">✕</button>
+      </header>
+      <div id="sheet-body"></div>
+    </div>
+  </div>
+  <div id="modal"></div>
+  <div id="toast"></div>
+  <input type="file" id="photo-input" accept="image/*" capture="environment" hidden />
+
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>

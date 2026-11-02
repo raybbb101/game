@@ -1,0 +1,14 @@
+{
+  "name": "Wildkin",
+  "short_name": "Wildkin",
+  "description": "Walk the real world, meet monsters in AR and make them your buddies.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "portrait",
+  "background_color": "#2a2350",
+  "theme_color": "#2a2350",
+  "icons": [
+    { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
