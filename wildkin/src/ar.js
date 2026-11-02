@@ -197,6 +197,8 @@ function mulberry(a) {
   };
 }
 
+export const isFlying = () => !!S.foe?.flies;
+
 const isNight = () => {
   const h = new Date().getHours();
   return h >= 19 || h < 6;
@@ -336,9 +338,15 @@ function blobShadow(size) {
   return m;
 }
 
-function place(kind, model, size, { hover = 0 } = {}) {
+// Flyers hover in the air (with their shadow on the floor below); walkers stand on the floor.
+function place(kind, model, size, { flies = false, hover = 0 } = {}) {
   const holder = new THREE.Group();
   const actor = new Actor(model);
+  if (flies) {
+    hover = hover || 0.45 + size * 0.5;
+    model.anim.flying = true;
+    model.anim.float = false; // the scene does the bobbing
+  }
   model.root.scale.setScalar(size);
   model.root.position.y = hover;
   model.root.traverse((o) => { if (o.isMesh) o.castShadow = true; });
@@ -346,7 +354,7 @@ function place(kind, model, size, { hover = 0 } = {}) {
   const shadow = blobShadow(Math.max(model.width, model.depth) * size * 0.9);
   holder.add(shadow);
   S.stage.add(holder);
-  S[kind] = { holder, actor, size, hover, shadow, spin: 0 };
+  S[kind] = { holder, actor, size, hover, maxHover: hover, shadow, spin: 0, flies, phase: Math.random() * 6, shadowBase: shadow.scale.x };
   return S[kind];
 }
 
@@ -362,23 +370,23 @@ export function showMonster(speciesId) {
   clearActors();
   $('#ar-actor').innerHTML = '';
   const size = sp.look.size;
-  S.dist = 1.15 + size * 1.25;
-  const f = place('foe', buildMonster(speciesId), size);
+  S.baseDist = S.dist = 1.15 + size * 1.25 + (sp.look.flies ? 0.3 : 0);
+  const f = place('foe', buildMonster(speciesId), size, { flies: sp.look.flies });
   f.actor.play('enter');
   burst(f, ELEMENTS[sp.element].color, 26, 'star');
-  S.foeHover = 0;
+  return { flies: sp.look.flies };
 }
 
 export function showFairy(kind) {
   if (!init()) return fallbackArt(fairySVG(kind, 200), `fairy ${kind}`);
   clearActors();
   $('#ar-actor').innerHTML = '';
-  S.dist = 1.6;
-  const f = place('foe', buildFairy(kind), 0.45, { hover: 0.55 });
+  S.baseDist = S.dist = 1.7;
+  const f = place('foe', buildFairy(kind), 0.45, { flies: true, hover: 0.8 });
   f.fairy = true;
   f.actor.play('enter');
   burst(f, '#ffffff', 30, 'star');
-  S.foeHover = 0.55;
+  return { flies: true };
 }
 
 export function showBuddy(speciesId) {
@@ -388,8 +396,9 @@ export function showBuddy(speciesId) {
     disposeModel(S.buddy.actor.model);
     S.buddy = null;
   }
-  const size = SPECIES_BY_ID[speciesId].look.size;
-  const b = place('buddy', buildMonster(speciesId), Math.min(size, 0.8) * 0.75);
+  const look = SPECIES_BY_ID[speciesId].look;
+  const size = look.size;
+  const b = place('buddy', buildMonster(speciesId), Math.min(size, 0.8) * 0.75, { flies: look.flies });
   b.holder.position.set(-0.34 - size * 0.1, 0, 0.12);
   b.holder.rotation.y = Math.PI - 0.4;
   b.actor.play('enter');
@@ -444,7 +453,8 @@ function sprite(color, kind = 'soft', size = 0.1, additive = true) {
 
 function chest(t) {
   const h = t.size * (t.actor.model.top || 1);
-  return t.holder.localToWorld(new THREE.Vector3(0, t.hover + h * 0.5, 0));
+  const r = t.actor.model.root.position;
+  return t.holder.localToWorld(new THREE.Vector3(r.x, r.y + h * 0.5, r.z));
 }
 
 function addParticle(obj, vel, life, { gravity = 0, grow = 0, fade = true } = {}) {
@@ -547,11 +557,32 @@ function tap(x, y) {
   if (!S.foe) return;
   const ray = new THREE.Raycaster();
   ray.setFromCamera(new THREE.Vector2((x / window.innerWidth) * 2 - 1, -(y / window.innerHeight) * 2 + 1), S.xr ? S.renderer.xr.getCamera() : S.camera);
-  const hit = ray.intersectObject(S.foe.holder, true).length > 0;
+  const hit = ray.intersectObject(S.foe.actor.model.root, true).length > 0;
   if (hit) {
     S.foe.actor.play('hop');
     hearts(S.foe);
     S.onPet?.();
+    return;
+  }
+  // Tapped the floor: the creature walks (or flies) over to that spot.
+  if (S.xr || S.buddy) return;
+  const floor = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+  const p = ray.ray.intersectPlane(floor, new THREE.Vector3());
+  if (!p) return;
+  const d = Math.hypot(p.x - S.camera.position.x, p.z - S.camera.position.z);
+  if (d < 0.7 || d > 6) return;
+  S.moveTo = { from: S.stage.position.clone(), to: p, t: 0, dur: Math.min(1.4, 0.4 + S.stage.position.distanceTo(p) * 0.4) };
+  S.foe.actor.play('hop', S.moveTo.dur);
+  dustAt(p);
+}
+
+function dustAt(p) {
+  for (let i = 0; i < 10; i++) {
+    const s = sprite('#ffffff', 'soft', 0.06, false);
+    s.material.opacity = 0.7;
+    s.position.copy(p).add(new THREE.Vector3(0, 0.02, 0));
+    const a = (i / 10) * Math.PI * 2;
+    addParticle(s, new THREE.Vector3(Math.cos(a) * 0.5, 0.15, Math.sin(a) * 0.5), 0.5);
   }
 }
 
@@ -559,6 +590,11 @@ function tap(x, y) {
 
 // Put the creature on the ground in front of wherever the phone is pointing.
 export function anchorHere() {
+  if (S.xr) {
+    S.placed = false; // pick a new spot on a real surface
+    S.stage.visible = false;
+    return;
+  }
   S.anchored = false;
 }
 
@@ -568,16 +604,26 @@ function anchor() {
   f.y = 0;
   if (f.lengthSq() < 0.01) f.set(0, 0, -1);
   f.normalize();
-  // Stand on the real floor if it is in view; if the phone is held level (floor out of view),
-  // lift the creature just enough that it sits in the lower part of the screen.
+  // Creatures always stand on the real floor (flyers hover above it). If you hold the phone level,
+  // a walker stands a little further away so that the floor under its feet is in view.
   const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(cam.quaternion);
   const down = Math.max(0, -Math.asin(THREE.MathUtils.clamp(fwd.y, -1, 1)));
   const half = THREE.MathUtils.degToRad(cam.fov / 2);
-  const reach = down + half * 0.3;
-  const groundAngle = Math.atan(EYE_HEIGHT / S.dist);
-  const y = groundAngle > reach ? Math.max(0, EYE_HEIGHT - S.dist * Math.tan(reach)) : 0;
-  S.stage.position.set(cam.position.x + f.x * S.dist, y, cam.position.z + f.z * S.dist);
-  S.stage.lookAt(cam.position.x, y, cam.position.z);
+  let dist = S.baseDist || S.dist;
+  const foe = S.foe;
+  if (S.hasSensor && foe && !S.buddy) {
+    if (!foe.flies) {
+      // stays at its natural distance, or steps back if you hold the phone level so its feet are in view
+      dist = THREE.MathUtils.clamp(EYE_HEIGHT / Math.tan(Math.max(0.1, down + half * 0.6)), dist, 4.5);
+    } else {
+      // flyers keep their distance but fly lower when you look down, higher when you look ahead
+      const lowest = foe.fairy ? 0.45 : 0.35;
+      foe.hover = THREE.MathUtils.clamp(EYE_HEIGHT - dist * Math.tan(down + half * 0.1), lowest, foe.maxHover);
+    }
+  }
+  S.dist = dist;
+  S.stage.position.set(cam.position.x + f.x * dist, 0, cam.position.z + f.z * dist);
+  S.stage.lookAt(cam.position.x, 0, cam.position.z);
   S.lights.key.position.copy(S.stage.position).add(new THREE.Vector3(1.5, 4, 2.5));
   S.lights.key.target = S.stage;
   S.anchored = true;
@@ -671,7 +717,7 @@ function frame(time, xrFrame) {
     if (!S.anchored) anchor();
     if (!S.hasSensor && S.foe) {
       // no motion sensors (desktop, or permission denied): frame the creature nicely
-      const look = S.stage.localToWorld(new THREE.Vector3(S.buddy ? -0.15 : 0, S.foe.hover * 0.8 + S.foe.size * 0.35, S.buddy ? -0.2 : 0));
+      const look = S.stage.localToWorld(new THREE.Vector3(S.buddy ? -0.15 : 0, S.foe.hover * 0.7 + S.foe.size * 0.35, S.buddy ? -0.2 : 0));
       S.camera.lookAt(look);
     }
   } else if (xrFrame && S.hitSource) {
@@ -685,7 +731,9 @@ function frame(time, xrFrame) {
     }
     if (!S.placed) {
       const h = $('#ar-hint');
-      h.textContent = S.reticle.visible ? 'Tap to place it on the floor' : 'Point at the floor and move your phone slowly';
+      h.textContent = S.reticle.visible
+        ? (S.foe?.flies ? 'Tap a spot — it will fly over it' : 'Tap a flat spot to put it there')
+        : 'Point at the floor or a table and move your phone slowly';
       h.classList.add('show');
     }
   }
@@ -694,11 +742,16 @@ function frame(time, xrFrame) {
     const a = S[k];
     if (!a) continue;
     a.actor.update(dt);
-    if (a.fairy) {
-      // fairies flit around in the air
-      a.holder.position.set(Math.sin(t * 0.7) * 0.35, Math.sin(t * 1.3) * 0.12, Math.sin(t * 0.45) * 0.15);
-      a.shadow.position.y = -a.holder.position.y + 0.003;
-      a.shadow.material.opacity = 0.35;
+    if (a.flies) {
+      // hover and drift in the air; the shadow stays on the floor, softer the higher it flies
+      const r = a.actor.model.root;
+      const ph = a.phase;
+      const wander = a.fairy ? 0.35 : 0.12;
+      r.position.set(Math.sin(t * 0.7 + ph) * wander, a.hover + Math.sin(t * 1.6 + ph) * 0.07, Math.sin(t * 0.45 + ph) * wander * 0.5);
+      a.shadow.position.set(r.position.x, 0.003, r.position.z);
+      const k = 1 / (1 + r.position.y * 0.8);
+      a.shadow.scale.setScalar(a.shadowBase * (1.2 - k * 0.2));
+      a.shadow.material.opacity = 0.75 * k;
     }
     if (k === 'foe') {
       S.spinVel *= 0.92;
@@ -714,6 +767,17 @@ function frame(time, xrFrame) {
       f.position.set(Math.cos(a) * u.r, u.y + Math.sin(t + u.a) * 0.2, Math.sin(a) * u.r);
       f.material.opacity = 0.5 + 0.5 * Math.sin(t * 3 + u.a * 5);
     }
+  }
+  // walking/flying to a tapped spot
+  if (S.moveTo && !S.xr) {
+    const m = S.moveTo;
+    m.t += dt;
+    const p = Math.min(1, m.t / m.dur);
+    const e = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
+    S.stage.position.lerpVectors(m.from, m.to, e);
+    S.stage.lookAt(S.camera.position.x, 0, S.camera.position.z);
+    S.lights.key.position.copy(S.stage.position).add(new THREE.Vector3(1.5, 4, 2.5));
+    if (p >= 1) S.moveTo = null;
   }
   // particles
   for (let i = S.fx.length - 1; i >= 0; i--) {
@@ -739,8 +803,8 @@ function positionBubble(cam) {
   const hint = $('#ar-hint');
   if (!S.foe || !el) return;
   const a = S.foe;
-  const top = a.size * (a.actor.model.top || 1) + a.hover + 0.06;
-  a.holder.localToWorld(tmpV.set(0, top, 0));
+  const rp = a.actor.model.root.position;
+  a.holder.localToWorld(tmpV.set(rp.x, rp.y + a.size * (a.actor.model.top || 1) + 0.06, rp.z));
   tmpV.project(cam);
   const behind = tmpV.z > 1;
   const x = (tmpV.x * 0.5 + 0.5) * window.innerWidth;

@@ -1029,7 +1029,7 @@ export class Actor {
     }
     for (const tl of anim.tails) tl.rotation.y = Math.sin(t * 2.6) * 0.35;
     for (const w of anim.wings) {
-      const f = w.userData.fast ? Math.sin(t * 28) * 0.55 : Math.sin(t * 3.2) * 0.35;
+      const f = w.userData.fast ? Math.sin(t * 28) * 0.55 : anim.flying ? Math.sin(t * 10) * 0.6 : Math.sin(t * 3.2) * 0.35;
       w.rotation.y = -w.userData.side * (0.35 + f);
     }
     for (const a of anim.arms) a.rotation.z = a.userData.side * (0.1 + Math.sin(t * 1.8) * 0.08);

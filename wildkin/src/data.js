@@ -337,6 +337,12 @@ export const SPECIES = [
     ['bite', 'starfall', 'roar']),
 ];
 
+// Who flies? Winged, ghostly, cloud and star creatures hover in the air in AR; everyone else stands on the ground.
+const ALSO_FLY = new Set(['solaris', 'twinklit', 'nyxtail', 'kitewing']);
+for (const s of SPECIES) {
+  s.look.flies ??= ALSO_FLY.has(s.id) || s.look.extra.some((e) => ['wings', 'mothwings', 'ghost', 'cloud'].includes(e));
+}
+
 export const SPECIES_BY_ID = Object.fromEntries(SPECIES.map((s) => [s.id, s]));
 
 // kind: 'hit' (damage), 'guard' (halve next hit), 'buff' (raise attack)

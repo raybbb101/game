@@ -12,7 +12,12 @@ When you get right next to a monster or fairy, tap it and it appears **in 3D, in
 - **AR**: the rear camera fills the screen and a real-time 3D scene (PBR lighting, soft shadows on the floor) is
   drawn on top. The 3D camera follows the phone's motion sensors, so the creature stays put in the room.
   Swipe to spin it around, tap to pet it.
-- **AR+** (phones with WebXR, e.g. Android Chrome): real floor detection — tap to place the creature on the ground.
+- **Flying vs. walking**: 16 species fly (winged, ghost, cloud and star creatures) and hover in the air with
+  their shadow on the floor below; the other 34 always stand on the floor. Holding the phone level, walkers step
+  back so their feet stay in view; looking down, flyers glide lower. **Tap the floor** to make the creature walk
+  (or fly) over to that spot.
+- **AR+** (phones with WebXR, e.g. Android Chrome): real surface detection — walkers stand on the floor or a table
+  you tap, flyers hover above it. 🎯 picks a new spot.
 - **No camera?** It appears in a 3D meadow (day or starry night with fireflies).
 - **3D battles**: your buddy and the wild monster face off, with elemental projectiles and particle bursts.
 - **Monsterdex**: all 50 species, shown as silhouettes until you meet them.

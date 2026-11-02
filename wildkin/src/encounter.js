@@ -30,6 +30,8 @@ export function setEncounterHooks({ closed }) {
 
 // ---------- Screen plumbing ----------
 
+let tipShown = false;
+
 function openScene(show) {
   requestSensors();
   const scene = $('#encounter');
@@ -41,7 +43,13 @@ function openScene(show) {
   scene.classList.remove('battling');
   scene.classList.add('show');
   startAR(S.save.settings.ar);
-  show();
+  const info = show() || {};
+  if (!tipShown) {
+    tipShown = true;
+    setTimeout(() => toast(info.flies
+      ? '🪽 It is flying! Tap the floor to call it over · swipe to spin it'
+      : '👣 It is standing on the floor. Tap the floor to move it · swipe to spin it', 4200), 1600);
+  }
   $('#enc-ar').onclick = async () => {
     const on = await setCamera(!scene.classList.contains('camera-on'));
     S.save.settings.ar = on;
@@ -60,7 +68,10 @@ function openScene(show) {
     vibrate(15);
   });
   $('#enc-close').onclick = () => closeScene();
-  $('#enc-recenter').onclick = () => anchorHere();
+  $('#enc-recenter').onclick = () => {
+    anchorHere();
+    toast($('#encounter').classList.contains('xr') ? 'Pick a new spot for it' : 'Brought it in front of you');
+  };
 }
 
 export function closeScene() {
@@ -201,6 +212,7 @@ export async function openMonster(spawn) {
   $('#enc-title').innerHTML = `<b>${sp.name}</b><span class="lv">Lv ${spawn.level}</span>
     <span class="chip el" style="--c:${el.color}">${el.icon} ${el.name}</span>
     <span class="chip">${pers.emoji} ${pers.label}</span>
+    ${sp.look.flies ? '<span class="chip">🪽 Flying</span>' : ''}
     ${sp.rarity !== 'common' ? `<span class="chip rar" style="--c:${RARITY[sp.rarity].color}">${RARITY[sp.rarity].label}</span>` : ''}`;
   sfx('appear');
   vibrate(25);

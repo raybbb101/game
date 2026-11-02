@@ -477,7 +477,7 @@ function dexDetail(sp, friend) {
   const el = ELEMENTS[sp.element];
   return h('div', { class: 'detail' },
     h('div', { class: 'detail-art', html: monsterSVG(sp.id, { size: 200 }) }),
-    h('div', { class: 'chips-row', html: `<span class="chip el" style="--c:${el.color}">${el.icon} ${el.name}</span><span class="chip rar" style="--c:${RARITY[sp.rarity].color}">${RARITY[sp.rarity].label}</span><span class="chip">${friend ? '★ Befriended' : '👀 Seen'}</span><span class="chip">📏 ${Math.round(sp.look.size * 100)} cm</span>` }),
+    h('div', { class: 'chips-row', html: `<span class="chip el" style="--c:${el.color}">${el.icon} ${el.name}</span><span class="chip rar" style="--c:${RARITY[sp.rarity].color}">${RARITY[sp.rarity].label}</span><span class="chip">${friend ? '★ Befriended' : '👀 Seen'}</span><span class="chip">📏 ${Math.round(sp.look.size * 100)} cm</span>${sp.look.flies ? '<span class="chip">🪽 Flies</span>' : '<span class="chip">👣 Walks</span>'}` }),
     h('p', { class: 'blurb' }, sp.blurb),
     h('p', { class: 'hint center' }, `Usually: ${Object.keys(sp.personalities).map((p) => `${PERSONALITIES[p].emoji} ${PERSONALITIES[p].label}`).join(' · ')}`),
     h('p', { class: 'hint center' }, `Loves: ${sp.likes.join(', ')}`),
