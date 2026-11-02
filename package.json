@@ -1,0 +1,10 @@
+{
+  "name": "tide-keeper",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "node tools/check-levels.mjs -v",
+    "generate": "node tools/generate-levels.mjs > src/levels.js",
+    "start": "python3 -m http.server 8000"
+  }
+}
